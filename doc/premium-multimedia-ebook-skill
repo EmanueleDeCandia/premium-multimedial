@@ -1,0 +1,384 @@
+---
+name: multimedia-book-dance-ecosystem
+description: Framework strategico, editoriale, distributivo e di misurazione per trasformare un libro digitale multimediale sulla danza in una piattaforma di valore culturale, business e advocacy. Ottimizzato per guidare agenti AI o team creativi nella progettazione di un sito web descrittivo e di una mappa interattiva SVG rivolti a fondazioni, istituzioni, sponsor, media e operatori culturali.
+version: 1.1.0
+language: it
+domain: creative-industries, cultural-marketing, digital-publishing, performing-arts
+---
+
+# Skill: Il Libro Multimediale come Ecosistema Culturale e di Sviluppo per la Danza
+
+## 1. Contesto e Regola d'Oro Editoriale (La Linea di Confine)
+
+Questo documento definisce l'architettura strategica, contenutistica e distributiva di un'iniziativa editoriale multimediale dedicata alla danza e alle arti performative. Lo scopo è dimostrare a stakeholder pubblici, privati e istituzionali come un prodotto editoriale di altissimo livello possa generare un impatto economico, mediatico e relazionale enormemente superiore alla semplice vendita di copie.
+
+### Principio Non Negoziabile: "Editorial First, Business by Design"
+
+Per funzionare come leva di marketing, fundraising e posizionamento, il libro **non deve mai apparire come una brochure promozionale o un publiredazionale**.
+
+- **Divieto di autocelebrazione:** La startup promotrice, gli sponsor e gli enti sostenitori non sono i "protagonisti" della narrazione, ma i *mecenati/abilitatori* di un'opera culturale autorevole.
+- **Valore intrinseco per il lettore:** Ogni capitolo, video, mappa o inchiesta deve reggere il confronto con le migliori riviste culturali, i saggi d'arte e i documentari d'autore.
+- **Integrazione nativa:** I meccanismi di crescita (referral, sponsorizzazioni, raccolta dati, advocacy) vivono *intorno* o *in continuità* con il valore culturale, mai interrompendolo in modo invasivo.
+
+---
+
+## 2. Istruzioni per l'Agente (Generazione del Sito Web Descrittivo)
+
+Quando utilizzi questa skill per generare testi, wireframe, infografiche SVG o codice per il sito web descrittivo del progetto:
+
+1. **Tono di voce:** Autorevole, visionario, culturale ma concreto sui risultati (linguaggio da *cultural strategy* ed editoria d'innovazione, mai da televendita).
+2. **Struttura modulare e tracciabilità:** Collega in modo rigoroso i 13 moduli di valorizzazione (Sezioni 3 e 4) ai 7 motori di diffusione (Sezione 5) utilizzando la Matrice di Sinergia (Sezione 6) e la Mappa di Architettura del Sito (Sezione 7).
+3. **Evidenzia la doppia anima:** Per ogni modulo del sito, mostra sempre il binomio **"Cosa legge/vive il pubblico (Valore Editoriale)"** e **"Cosa ottiene il partner (Diffusione, Impatto & KPI)"**.
+4. **Visualizzazione dell'ecosistema:** Segui le specifiche semantiche della Sezione 8 per costruire la mappa interattiva SVG con filtri dinamici per profilo di stakeholder.
+
+---
+
+## 3. Gruppo A: I 6 Pilastri Fondamentali dell'Ecosistema
+
+### 3.1 Acquisto B2B/B2G, Diffusione Verticale e Motore Referral
+*Superare i vincoli di finanziamento al non profit trasformando l'opera in un bene culturale acquistabile e virale.*
+
+- **Tema / Contenuto Editoriale Multimediale:**
+  *"Atlante Vivo della Danza e dei Mestieri d'Arte"* — Monografie digitali d'autore che raccontano il dialogo tra coreografia e alto artigianato italiano (sartoria teatrale, scarpette fatte a mano, scenografia, liuteria e design del movimento), arricchite da brevi documentari in 4K, gallery fotografiche ad alta risoluzione e schede di approfondimento storico-tecnico.
+- **Come Farlo (Attività Operative):**
+  1. Confezionare pacchetti di copie digitali/licenze personalizzabili (con prefazione istituzionale o ex-libris digitale) acquistabili da fondazioni bancarie, aziende ed enti come bene culturale o omaggio di valore.
+  2. Distribuire l'accesso tramite landing page dedicate a database verticali profilati (es. associazioni di categoria dell'artigianato, scuole di danza, circoli culturali).
+  3. Integrare al termine dei capitoli un sistema di *referral culturale*: il lettore che invita altri 3 colleghi o appassionati sblocca un contenuto editoriale esclusivo (es. una masterclass filmata o il backstage integrale di uno spettacolo) anziché uno sconto commerciale banale.
+- **Benefici:**
+  - Generazione di ricavi immediati e non diluitivi, pienamente conformi alle regole di acquisto di beni/servizi da parte di fondazioni ed enti.
+  - Acquisizione di un pubblico altamente profilato con costi di marketing (CAC) drasticamente ridotti.
+  - Diffusione organica e tracciabile delle iniziative della startup prima ancora del lancio commerciale dei servizi core.
+- **Motori di Diffusione Dominanti:** *Account-Based Content Marketing (ABM)* (`5.2`) per i decisori B2B/B2G + *Gated Value-Exchange & Viral Referral Loops* (`5.6`) per l'espansione organica.
+- **Metriche di Impatto (KPI):**
+  1. **Tasso di Viralità Organica ($K$-factor / Referral Rate):** Numero medio di nuovi lettori unici generati da ogni lettore iniziale tramite la condivisione dei contenuti sbloccabili.
+  2. **Valore Medio per Contratto B2B/B2G (ACV):** Ricavo medio generato per singola fondazione o ente acquirente rispetto al valore di copertina della copia singola.
+
+---
+
+### 3.2 Format Immersivi, Serialità, Territorio e Giornalisti-Giurati
+*Estendere la vita del libro oltre la lettura singola trasformandolo in un appuntamento seriale e partecipato.*
+
+- **Tema / Contenuto Editoriale Multimediale:**
+  *"Cronache del Movimento: Storie, Luoghi e Sfide"* — Un racconto a puntate mensili strutturato come un festival digitale permanente: include trailer cinematografici, mappe interattive dei teatri e degli spazi non convenzionali della danza in Italia, micro-documentari realizzati da scuole e compagnie locali, e una "caccia al dettaglio" (treasure hunt culturale) nascosta tra testi e video che premia la curiosità artistica.
+- **Come Farlo (Attività Operative):**
+  1. Progettare un calendario editoriale a episodi (es. 6 o 12 uscite annuali) per trasformare il libro in un appuntamento ricorrente.
+  2. Lanciare contest territoriali per scuole e compagnie: i partecipanti producono video-racconti o coreografie originali che diventano parte integrante delle puntate; il pubblico vota associando al voto una micro-donazione mirata (*"dona con il voto"* per borse di studio o progetti locali).
+  3. Ospitare tavole rotonde multimediali (video-dibattiti e saggi brevi) tra opinion leader della danza e di altri settori sul tema del valore condiviso.
+  4. Coinvolgere giornalisti culturali e generalisti non solo come firme editoriali, ma come membri di giuria nelle tappe locali dei concorsi/tornei in diverse città italiane.
+- **Benefici:**
+  - Allungamento drastico del ciclo di vita del prodotto editoriale e fidelizzazione continuativa della community.
+  - Co-creazione di contenuti originali a costo contenuto grazie al coinvolgimento attivo di scuole e compagnie, che portano con sé i propri pubblici.
+  - Moltiplicazione della copertura mediatica locale e nazionale generata spontaneamente dai giornalisti-giurati.
+- **Motori di Diffusione Dominanti:** *Creator, Juror & Micro-Ambassador Loops (Ego-Bait)* (`5.5`) + *Dark Social & Niche Community Seeding* (`5.7`) (condivisione dei link di voto su WhatsApp/Telegram delle scuole).
+- **Metriche di Impatto (KPI):**
+  1. **Tasso di Ritenzione Seriale (Episode Retention Rate):** Percentuale di lettori della prima puntata che apre e completa almeno il 60% delle puntate successive.
+  2. **Tasso di Partecipazione Attiva & Rassegna Stampa Locale:** Numero di voti/interazioni generate dai contest territoriali e numero di articoli/servizi pubblicati dai giornalisti coinvolti nelle giurie.
+
+---
+
+### 3.3 Sponsorizzazioni Private e Partnership con Enti Pubblici Territoriali
+*Trasformare il libro in un veicolo di reputazione per brand privati e di valorizzazione per Regioni e Comuni.*
+
+- **Tema / Contenuto Editoriale Multimediale:**
+  *"Geografie della Danza e dell'Eccellenza"* — Edizioni speciali tematiche o territoriali (es. un volume dedicato alla danza nei borghi storici e nei teatri delle Marche, o un dossier su benessere, postura, estetica e sostenibilità nel corpo in movimento), dove il territorio o il tema affine al brand viene esplorato con rigore giornalistico, reportage fotografici e audio-guide d'autore.
+- **Come Farlo (Attività Operative):**
+  1. Strutturare pacchetti di *cultural sponsorship* per aziende private: il brand sostiene la realizzazione di un capitolo tematico coerente con i propri valori e ottiene il diritto di distribuire l'ebook gratuitamente come omaggio esclusivo alla propria base clienti (CRM) e ai prospect.
+  2. Co-progettare edizioni territoriali con Unioni di Comuni e Regioni (es. Regione Marche), combinando patrocinio istituzionale, acquisto di licenze per i cittadini/turisti e diffusione coordinata sulle newsletter e sui portali istituzionali dell'ente.
+- **Benefici:**
+  - Modello di monetizzazione altamente scalabile che supera di ordini di grandezza la marginalità della vendita al dettaglio.
+  - Accesso diretto e legittimato ai database proprietari di aziende ed enti pubblici.
+  - Posizionamento elevato per gli sponsor, che si associano a un prodotto culturale di pregio anziché a banner pubblicitari invasivi.
+- **Motori di Diffusione Dominanti:** *Partner-Led Distribution & Audience Borrowing* (`5.1`) (sfruttamento diretto di CRM aziendali e portali istituzionali tramite co-branding) + *Phygital Proximity Triggers* (`5.4`) (QR/NFC nei punti vendita, borghi ed eventi patrocinati).
+- **Metriche di Impatto (KPI):**
+  1. **Tasso di Riscatto sui Database Partner (Partner Redemption Rate):** Percentuale di clienti aziendali o cittadini che scarica/apre l'ebook tramite i canali di distribuzione dello sponsor o dell'ente.
+  2. **Tempo Medio di Permanenza sul Contenuto Sponsorizzato (Average Dwell Time):** Minuti medi trascorsi dai lettori all'interno dei moduli editoriali sostenuti dal partner (indicatore diretto di *brand affinity*).
+
+---
+
+### 3.4 Alleanze con Grandi Istituzioni Culturali ed Earned Media
+*Usare la forza editoriale come chiave d'accesso a festival e istituzioni prestigiose.*
+
+- **Tema / Contenuto Editoriale Multimediale:**
+  *"Quaderni d'Autore e Diari di Festival"* — Speciali monografici dedicati a grandi rassegne internazionali (es. Festival dei Due Mondi di Spoleto), composti da interviste inedite a coreografi ospiti, saggi critici sugli spettacoli in cartellone, archivi fotografici storici e clip di prove commentate.
+- **Come Farlo (Attività Operative):**
+  1. Proporre all'istituzione una partnership editoriale a costo zero per l'ente: la startup opera come editore indipendente che produce e distribuisce contenuti di approfondimento dedicati al programma del festival.
+  2. In cambio della copertura editoriale qualificata, concordare la distribuzione dell'ebook all'interno della mailing list ufficiale e dei canali social dell'istituzione.
+  3. Utilizzare la credibilità acquisita durante la collaborazione editoriale per facilitare il *go-to-market* e presentare all'istituzione (e alla sua rete) gli altri servizi tecnologici o strategici della startup.
+- **Benefici:**
+  - Trasferimento immediato di autorevolezza (*halo effect*) dall'istituzione storica alla startup.
+  - Acquisizione di *Earned Media* e accesso a una reach qualificata di appassionati, mecenati e addetti ai lavori difficilmente raggiungibile tramite advertising.
+  - Apertura di canali relazionali diretti con i vertici decisionali del settore culturale.
+- **Motori di Diffusione Dominanti:** *Partner-Led Distribution / Co-Branded List-Piggybacking* (`5.1`) (invio DEM agli abbonati del festival) + *Phygital Proximity Triggers* (`5.4`) (QR code nei programmi di sala e nei foyer).
+- **Metriche di Impatto (KPI):**
+  1. **Earned Media Value (EMV) & Reach Istituzionale:** Stima del valore mediatico e numero di utenti unici raggiunti attraverso i canali proprietari (newsletter, social, sito) dell'istituzione partner.
+  2. **Tasso di Conversione Relazionale (B2B Pipeline):** Numero di nuovi contatti istituzionali o trattative commerciali generate a valle della pubblicazione dello speciale.
+
+---
+
+### 3.5 Sinergia con l'Editoria a Stampa (Allegati e Collezionabili)
+*Unire la capillarità e l'autorevolezza della carta stampata con l'interattività del digitale.*
+
+- **Tema / Contenuto Editoriale Multimediale:**
+  *"La Biblioteca della Danza Contemporanea"* — Una collana di fascicoli o inserti a stampa d'autore (ritratti di grandi maestri, storia dei balletti iconici, guide alla visione degli spettacoli) progettati in formato *phygital*: ogni pagina cartacea integra QR code editoriali che aprono video-analisi, estratti coreografici e contenuti multimediali estesi sull'ebook.
+- **Come Farlo (Attività Operative):**
+  1. Negoziare accordi di co-edizione o distribuzione con quotidiani locali, grandi quotidiani nazionali, settimanali, mensili e riviste specialistiche di danza/spettacolo.
+  2. Inserire l'opera come allegato collezionabile in edicola o come benefit digitale riservato agli abbonati della testata.
+  3. Creare un ponte fluido dalla carta al digitale per trasformare il lettore occasionale di edicola in un utente registrato della piattaforma multimediale.
+- **Benefici:**
+  - Massificazione della visibilità e legittimazione immediata presso il pubblico generalista e gli addetti ai lavori.
+  - Offerta di un contenuto innovativo e collezionabile che aiuta gli editori tradizionali ad aumentare vendite e fidelizzazione degli abbonati.
+- **Motori di Diffusione Dominanti:** *Phygital Proximity Triggers (Print-to-Digital Bridge)* (`5.4`) + *Content Atomization & Syndication* (`5.3`) sugli ecosistemi digitali delle testate partner.
+- **Metriche di Impatto (KPI):**
+  1. **Tasso di Attivazione Phygital (QR-to-Digital Conversion):** Percentuale di copie cartacee distribuite che genera almeno un accesso effettivo ai contenuti multimediali digitali.
+  2. **Tiratura / Diffusione Complessiva Raggiunta:** Numero totale di copie o abbonati esposti all'inserto sulle testate partner.
+
+---
+
+### 3.6 Opinion Leader, Format Inchiesta e Advocacy ("Pagina Bianca")
+*Posizionare il libro come piattaforma di dibattito pubblico e pressione costruttiva sul sistema culturale.*
+
+- **Tema / Contenuto Editoriale Multimediale:**
+  *"Stati Generali della Danza: Inchieste e Prese di Posizione"* — Dossier giornalistici rigorosi su nodi strutturali del settore (sostenibilità economica, tutela e carriere dei danzatori, riforma dei finanziamenti, accesso alla cultura), con sezioni firmate da autorevoli opinion leader e una sezione istituzionale dedicata al confronto diretto con i decisori pubblici.
+- **Come Farlo (Attività Operative):**
+  1. **Format Inchiesta:** Affidare a figure di spicco (coreografi, economisti della cultura, direttori di teatro, giuristi) una pagina multimediale (testo + video-editoriale breve) per esporre dati e proposte concrete su un tema critico.
+  2. **Format Advocacy ("La Pagina Bianca"):** Dedicare uno spazio formale e visibile a un'istituzione chiave (es. Ministero della Cultura o assessorati competenti) ponendo domande chiare e costruttive; comunicare preventivamente la data di chiusura editoriale, lasciando la pagina deliberatamente bianca con nota esplicita in caso di mancata risposta.
+  3. Accompagnare l'uscita con un ufficio stampa mirato verso testate nazionali, agenzie di stampa e programmi di approfondimento culturale.
+- **Benefici:**
+  - Trasformazione della startup da semplice operatore di mercato a voce autorevole e osservatorio riconosciuto del settore.
+  - Forte risonanza mediatica organica e dibattito sui social media generato dalla forza simbolica della "pagina bianca".
+- **Motori di Diffusione Dominanti:** *Content Atomization (Hub-and-Spoke)* (`5.3`) per il dibattito social/LinkedIn + *Creator & Opinion Leader Advocacy Loops* (`5.5`) (Digital PR e amplificazione generata dagli autori e dalla "Pagina Bianca").
+- **Metriche di Impatto (KPI):**
+  1. **Share of Voice & Citazioni Media:** Numero di riprese giornalistiche, menzioni sui social da parte di stakeholder di settore e inviti a tavoli o convegni istituzionali.
+  2. **Tasso di Risposta Istituzionale:** Percentuale di decisori pubblici o enti interpellati che forniscono una presa di posizione ufficiale (prima della pubblicazione o come aggiornamento successivo).
+
+---
+
+## 4. Gruppo B: Le 7 Estensioni Modulari dell'Ecosistema (Nuove Opportunità)
+
+### 4.1 Edizione "Living Archive" e Dossier di Settore (B2B / Ricerca)
+*Trasformare i capitoli enciclopedici in una risorsa permanente di riferimento per il settore.*
+
+- **Tema / Contenuto Editoriale Multimediale:**
+  *"Annuario Dinamico delle Arti Performative"* — Un archivio vivo e aggiornabile contenente schede storiche, case study gestionali, analisi di tendenze internazionali, video-interviste tecniche e repertori catalogati per stili e territori.
+- **Come Farlo (Attività Operative):**
+  1. Strutturare i capitoli enciclopedici in un database editoriale consultabile e aggiornabile trimestralmente.
+  2. Proporre licenze d'accesso annuali multi-utente a università, biblioteche, accademie, osservatori culturali e associazioni di categoria.
+- **Benefici:**
+  - Creazione di ricavi ricorrenti (abbonamenti/licenze B2B) svincolati dalla singola campagna di lancio.
+  - Consolidamento di un asset proprietario di conoscenza unico nel panorama nazionale.
+- **Motori di Diffusione Dominanti:** *Account-Based Content Marketing (ABM)* (`5.2`) verso biblioteche e università + *Content Atomization & Hub-and-Spoke SEO* (`5.3`) (schede pubbliche indicizzate che rimandano all'archivio completo).
+- **Metriche di Impatto (KPI):**
+  1. **Ricavo Ricorrente Annuale da Licenze (ARR B2B):** Valore complessivo degli abbonamenti istituzionali/accademici attivi.
+  2. **Tasso di Rinnovo Annuale (Renewal Rate):** Percentuale di enti e biblioteche che rinnova l'accesso all'archivio nell'anno successivo.
+
+---
+
+### 4.2 Kit Didattico Interattivo per Scuole, Conservatori e Accademie
+*Portare la cultura della danza nell'educazione formale tramite strumenti multimediali.*
+
+- **Tema / Contenuto Editoriale Multimediale:**
+  *"Capire il Movimento: Guida Multimediale per Studenti e Docenti"* — Moduli educativi che abbinano video-analisi passo-passo di coreografie storiche e contemporanee, glossari illustrati, approfondimenti su musica e storia dell'arte, e tracce per laboratori in classe.
+- **Come Farlo (Attività Operative):**
+  1. Affiancare al comitato editoriale pedagogisti e docenti di storia della danza per creare schede didattiche allineate ai programmi scolastici e ai percorsi PCTO (ex alternanza scuola-lavoro).
+  2. Promuovere adozioni multi-licenza presso istituti superiori, licei coreutici, conservatori e progetti educativi finanziati da fondazioni o bandi regionali.
+- **Benefici:**
+  - Apertura del vasto mercato *EdTech* e culturale-scolastico, altamente finanziabile da enti pubblici e fondazioni.
+  - Formazione del pubblico di domani (audience development strutturale).
+- **Motori di Diffusione Dominanti:** *Partner-Led Distribution / Institutional Channels* (`5.1`) (reti scolastiche, Uffici Scolastici Regionali, reti di licei coreutici) + *Teacher Ambassador Loops* (`5.5`).
+- **Metriche di Impatto (KPI):**
+  1. **Numero di Istituti e Classi Adottanti:** Totale di scuole, licei coreutici o accademie che integrano il kit nei propri percorsi formativi.
+  2. **Tasso di Completamento dei Moduli Didattici:** Percentuale di studenti/classi che completa i percorsi interattivi assegnati.
+
+---
+
+### 4.3 Portale / Vetrina per Bandi, Residenze, Casting e Audizioni
+*Affiancare al valore culturale un'utilità pratica ricorrente per i professionisti.*
+
+- **Tema / Contenuto Editoriale Multimediale:**
+  *"Bussola delle Opportunità e Storie di Carriera"* — Una sezione viva integrata nell'ecosistema editoriale che alterna interviste a direttori di residenze artistiche e guide pratiche su come affrontare un'audizione internazionale, a una bacheca multimediale curata di bandi, borse di studio, residenze e casting.
+- **Come Farlo (Attività Operative):**
+  1. Integrare nell'ebook/piattaforma un modulo aggiornabile dedicato alle call artistiche, con schede video di presentazione delle residenze e dei teatri ospitanti.
+  2. Stringere accordi con festival, fondazioni e compagnie per la pubblicazione in evidenza delle loro call e per la raccolta strutturata delle candidature o dei portfolio.
+- **Benefici:**
+  - Trasformazione del libro in uno strumento di utilità frequente, aumentando drasticamente i ritorni spontanei degli utenti professionali.
+  - Creazione di una community verticalissima di danzatori, coreografi e operatori culturali.
+- **Motori di Diffusione Dominanti:** *Dark Social & Niche Community Seeding* (`5.7`) (schede bando mobile-first condivise nei gruppi WhatsApp/Telegram di danzatori) + *Partner-Led Two-Sided Network Loop* (`5.1`) (chi pubblica il bando promuove l'ebook ai propri candidati).
+- **Metriche di Impatto (KPI):**
+  1. **Utenti Attivi Mensili di Ritorno (Returning MAU):** Numero di professionisti che torna regolarmente a consultare la sezione opportunità.
+  2. **Tasso di Candidatura / Click-Through sulle Call:** Numero di interazioni qualificate generate verso i bandi e le audizioni ospitate.
+
+---
+
+### 4.4 Progetto "Cultural Tourism & Itinerari"
+*Connettere la narrazione della danza alla scoperta lenta e sostenibile dei territori.*
+
+- **Tema / Contenuto Editoriale Multimediale:**
+  *"Sulle Tracce della Danza: Itinerari tra Teatri Storici, Borghi e Festival"* — Guide esperienziali multimediali con mappe geolocalizzate, audio-racconti da ascoltare in cammino, interviste agli artigiani del posto e calendari stagionali degli spettacoli dal vivo sul territorio.
+- **Come Farlo (Attività Operative):**
+  1. Collaborare con DMO (Destination Management Organization), consorzi turistici, reti di hotel di charme e operatori di turismo culturale.
+  2. Offrire il libro multimediale come guida digitale di benvenuto co-brandizzata per gli ospiti delle strutture ricettive o per i visitatori di una destinazione.
+- **Benefici:**
+  - Accesso ai budget del turismo culturale e del destination marketing, tipicamente più ampi rispetto a quelli del solo spettacolo dal vivo.
+  - Allargamento del pubblico dai soli appassionati di danza ai viaggiatori culturali italiani e internazionali.
+- **Motori di Diffusione Dominanti:** *Phygital Proximity Triggers* (`5.4`) (QR/NFC in camera d'albergo, info-point, stazioni e teatri storici) + *Partner-Led Hospitality Co-Marketing* (`5.1`).
+- **Metriche di Impatto (KPI):**
+  1. **Download / Accessi per Destinazione Turistica:** Volume di viaggiatori che attiva la guida tramite strutture ricettive o info-point partner.
+  2. **Click verso Esperienze e Biglietterie Locali:** Numero di lettori che passa dalla lettura dell'itinerario alla prenotazione di spettacoli, visite o servizi sul territorio.
+
+---
+
+### 4.5 Format "Behind the Scenes" e Tech/Craft Showcase
+*Valorizzare la filiera tecnica, tecnologica e scientifica che rende possibile lo spettacolo.*
+
+- **Tema / Contenuto Editoriale Multimediale:**
+  *"L'Ingegneria dell'Invisibile"* — Reportage multimediali e video-esplosi interattivi dedicati a ciò che il pubblico non vede: illuminotecnica, acustica, pavimentazioni tecniche, biomeccanica e fisioterapia del danzatore, materiali tessili innovativi e tecnologie digitali per la scena.
+- **Come Farlo (Attività Operative):**
+  1. Identificare aziende eccellenti della filiera tecnica, medicale/sportiva e tecnologica interessate a raccontare il proprio know-how attraverso casi d'uso reali e ad alto prestigio estetico.
+  2. Realizzare capitoli di approfondimento tecnico-scientifico in cui l'innovazione del partner viene mostrata in azione nel contesto autentico della preparazione artistica, con taglio divulgativo e mai pubblicitario.
+- **Benefici:**
+  - Sblocco di sponsor tecnici B2B e aziende tech/health ad alta capacità di spesa, normalmente lontane dalle sponsorizzazioni culturali tradizionali.
+  - Arricchimento del valore educativo e divulgativo dell'opera.
+- **Motori di Diffusione Dominanti:** *Phygital Proximity Triggers (B2B Trade & Fairs)* (`5.4`) (QR code negli stand di fiere di settore, congressi di medicina della danza e teatri) + *Account-Based Content Marketing / Partner Sales-Enablement* (`5.2`).
+- **Metriche di Impatto (KPI):**
+  1. **Valore delle Sponsorizzazioni Tecniche Attivate:** Ricavo diretto o valore di fornitura tecnica (barter) generato dai partner di filiera.
+  2. **Lead B2B Qualificati:** Numero di richieste di contatto o approfondimento verso i partner tecnici generate da teatri, scuole o professionisti lettori.
+
+---
+
+### 4.6 Raccolta Dati e Insight di Mercato (Zero-Party Data)
+*Trasformare la lettura interattiva in conoscenza strategica sul pubblico della danza.*
+
+- **Tema / Contenuto Editoriale Multimediale:**
+  *"Ritratti del Pubblico: Sondaggi d'Autore e Mappe dei Gusti"* — Micro-interazioni editoriali integrate in modo elegante tra i capitoli (es. test interattivi "Quale stile coreografico racconta la tua estetica?", sondaggi sulle abitudini di fruizione culturale, mappe partecipative dei desideri del pubblico), i cui risultati aggregati vengono restituiti ai lettori sotto forma di infografiche editoriali.
+- **Come Farlo (Attività Operative):**
+  1. Inserire punti di raccolta dati dichiarativi (*Zero-Party Data*) trasparenti e conformi al GDPR, motivati dalla curiosità del lettore e dalla co-creazione di report di settore.
+  2. Analizzare i dati aggregati per orientare lo sviluppo dei prodotti della startup e per redigere report di mercato esclusivi da offrire a sponsor, teatri e istituzioni.
+- **Benefici:**
+  - Patrimonio informativo proprietario unico in un settore spesso privo di dati aggiornati sui comportamenti del pubblico.
+  - Aumento drastico del valore percepito delle proposte commerciali verso sponsor e partner istituzionali.
+- **Motori di Diffusione Dominanti:** *Gated Value-Exchange & Interactive Quiz Loops* (`5.6`) (risultati grafici personalizzati condivisibili sui social) + *Content Atomization & Data-PR Infographics* (`5.3`).
+- **Metriche di Impatto (KPI):**
+  1. **Tasso di Completamento dei Micro-Sondaggi (Survey Completion Rate):** Percentuale di lettori che risponde volontariamente ai moduli interattivi.
+  2. **Profili Segmentati e Consensati:** Numero di utenti unici con preferenze tematiche/territoriali profilate nel rispetto della normativa privacy.
+
+---
+
+### 4.7 Edizioni White-Label o Co-Branded "Chiavi in Mano"
+*Scalare l'architettura del libro trasformandola in un prodotto replicabile per altri settori creativi.*
+
+- **Tema / Contenuto Editoriale Multimediale:**
+  *"Piattaforma Editoriale per le Arti e la Cultura"* — Il medesimo formato multimediale (struttura a capitoli, video, mappe, referral, inchieste) declinato su temi affini richiesti da committenti terzi: la stagione di un teatro lirico, il centenario di una fondazione, la rassegna di un museo o un progetto di design/musica.
+- **Come Farlo (Attività Operative):**
+  1. Standardizzare il template tecnologico, il flusso redazionale e i moduli di analytics sviluppati per il libro sulla danza.
+  2. Proporre l'infrastruttura come servizio editoriale-tecnologico "chiavi in mano" (white-label o co-branded) a fondazioni, festival, musei e grandi imprese culturali.
+- **Benefici:**
+  - Diversificazione dei ricavi con margini elevati grazie al riutilizzo della tecnologia e del know-how già ammortizzati.
+  - Posizionamento della startup come leader tecnologico-editoriale per l'intero comparto delle industrie creative.
+- **Motori di Diffusione Dominanti:** *Account-Based Content Marketing (ABM)* (`5.2`) verso grandi committenti culturali + *Viral / Product-Led Growth (PLG) Loop* (`5.6`) tramite badge *"Powered-By"* integrato nel footer di ogni edizione attiva.
+- **Metriche di Impatto (KPI):**
+  1. **Margine Operativo per Edizione Replicata:** Rapporto tra ricavo della commessa white-label e costo marginale di produzione/personalizzazione.
+  2. **Numero di Commesse Extra-Danza Attivate:** Conteggio delle edizioni realizzate per settori culturali o istituzionali affini nell'arco di 12-24 mesi.
+
+---
+
+## 5. I 7 Motori di Diffusione dell'Ecosistema
+
+Questi 7 motori rappresentano l'infrastruttura operativa attraverso cui l'opera multimediale viaggia tra reti istituzionali, territori, media e community, massimizzando la reach con costi di acquisizione minimi.
+
+### 5.1 Partner-Led Distribution & Audience Borrowing (Co-Marketing di Rete)
+- **Cos'è:** L'utilizzo strategico dei canali proprietari (newsletter, portali soci, CRM, app) di associazioni culturali, festival, sindacati di categoria, reti di scuole e aziende sponsor.
+- **Meccanica Operativa:** Si crea una landing page co-brandizzata con URL dedicato (es. `libro.it/nome-festival`) e un *ex-libris* digitale personalizzato. L'istituzione partner invia l'opera alla propria mailing list non come pubblicità di terzi, ma come **regalo culturale esclusivo** riservato ai propri iscritti/clienti.
+- **KPI Distributivo:** *Partner Redemption Rate* (tasso di attivazione sul totale degli inviati del partner) e *Costo di Acquisizione Effettivo* ($\text{CAC} \approx 0$).
+
+### 5.2 Account-Based Content Marketing (ABM) & "Trojan Horse" Seeding
+- **Cos'è:** La distribuzione chirurgica di micro-edizioni iper-personalizzate rivolte a un ristretto numero di decisori chiave (Presidenti di Fondazioni bancarie, Assessori alla Cultura, Direttori Marketing di grandi sponsor).
+- **Meccanica Operativa:** Prima ancora di fissare un appuntamento commerciale, si invia al decisore un cofanetto phygital o un accesso VIP a un capitolo che contiene già un'analisi o un omaggio dedicato al suo territorio/settore. Il libro agisce da "cavallo di Troia" culturale che legittima la startup e apre la porta al successivo pitch sui servizi core.
+- **KPI Distributivo:** *Account Engagement Score* (apertura e tempo di lettura da parte del target nominativo) e *Meeting Conversion Rate*.
+
+### 5.3 Content Atomization & Modello "Hub-and-Spoke" (Syndication)
+- **Cos'è:** Il libro multimediale funge da **Hub centrale** ad alta densità, dal quale vengono estratti decine di micro-contenuti (**Spoke**) adattati ai linguaggi delle diverse piattaforme e ceduti in *syndication* a testate e partner.
+- **Meccanica Operativa:** Da ogni capitolo si ricavano: 3 clip verticali (Reels/TikTok/Shorts) da 45 secondi, 2 caroselli infografici per LinkedIn (target istituzionale/B2B), 1 estratto testuale per riviste culturali partner e 1 pillola audio. Ogni micro-asset chiude con un invito naturale all'approfondimento sull'opera integrale.
+- **KPI Distributivo:** *Hub Referral Traffic* (traffico qualificato generato dai singoli spoke verso il libro) e *Content Amplification Ratio*.
+
+### 5.4 Phygital Proximity Triggers (Ingressi Contestuali nel Mondo Reale)
+- **Cos'è:** La trasformazione di luoghi fisici ad alta densità emotiva in punti d'accesso immediati al libro digitale.
+- **Meccanica Operativa:** Posizionamento di totem, segnalibri d'autore, tag NFC o QR code contestuali in momenti di picco attentivo: nei foyer dei teatri prima dello spettacolo (con guida alla visione), nei camerini e nelle sale d'attesa delle scuole di danza, negli inserti dei quotidiani in edicola, nelle camere degli hotel partner e negli stand fieristici.
+- **KPI Distributivo:** *Scan-to-Read Conversion Rate* per singolo punto fisico geolocalizzato.
+
+### 5.5 Creator, Juror & Micro-Ambassador Loops (Ego-Bait & Advocacy)
+- **Cos'è:** La trasformazione di tutti i soggetti coinvolti nell'opera (coreografi intervistati, artigiani, giornalisti-giurati, docenti, scuole partecipanti ai contest) in distributori entusiasti.
+- **Meccanica Operativa:** Si applica la leva dell'*Ego-Bait* positivo: a ogni protagonista o giurato viene fornito al momento della pubblicazione un **Media Kit personalizzato** (grafiche pronte con la propria citazione, badge ufficiale "Membro della Giuria / Autore Ospite", link tracciato diretto alla propria pagina). Per orgoglio professionale, ogni nodo condivide l'opera alla propria rete locale.
+- **KPI Distributivo:** *Ambassador Share Rate* e traffico organico generato dai singoli link personalizzati.
+
+### 5.6 Gated Value-Exchange & Viral Referral / PLG Loops
+- **Cos'è:** Meccanismi di sblocco progressivo e propagazione nativa che premiano l'azione dell'utente con ulteriore valore editoriale o trasformano ogni edizione in un vettore commerciale.
+- **Meccanica Operativa:**
+  1. *Peer-to-Peer Unlock:* Il lettore accede gratuitamente ai primi capitoli; per sbloccare i contenuti "Director's Cut" (masterclass integrali, partiture coreografiche, backstage) può scegliere se condividere il link con 3 colleghi/amici oppure lasciare una micro-donazione per le borse di studio.
+  2. *Social Quiz Loop:* I test interattivi di profilazione (Sez. 4.6) generano una scheda visiva condivisibile (es. *"Il tuo profilo estetico nella danza"*), innescando curiosità emulativa.
+  3. *Product-Led Growth (PLG) Badge:* Nelle edizioni white-label (Sez. 4.7), il footer tecnologico *"Powered by..."* genera spontaneamente richieste da nuovi committenti.
+- **KPI Distributivo:** *Viral Coefficient* ($K$-factor) e *Progressive Opt-in Rate*.
+
+### 5.7 Dark Social & Niche Community Seeding
+- **Cos'è:** L'ottimizzazione dell'opera per la circolazione invisibile ma ad altissima conversione che avviene nelle chat private (WhatsApp, Telegram, Messenger) e nelle community chiuse di professionisti.
+- **Meccanica Operativa:** Ogni singolo bando (Sez. 4.3), scheda didattica (Sez. 4.2) o video-inchiesta (Sez. 3.6) è dotato di un **Deep-Link mobile-first** con anteprima OpenGraph curatissima e pulsante *"Inoltra a un collega su WhatsApp"*. I community manager della startup seminano questi micro-link utili nei gruppi di insegnanti di danza, direttori artistici e operatori culturali.
+- **KPI Distributivo:** *Direct / Dark Social Traffic Share* (accessi diretti a URL profondi non provenienti da motori di ricerca o social pubblici).
+
+---
+
+## 6. Matrice di Sinergia: Moduli Editoriali × Tecniche di Diffusione
+
+Questa matrice guida l'agente AI e il team marketing nell'associare a ogni linea di business (Gruppi A e B) i motori di distribuzione più efficaci della Sezione 5.
+
+| Modulo dell'Ecosistema | Motore Primario (1°) | Motore Secondario (2°) | Leva Psicologica / Relazionale |
+| :--- | :--- | :--- | :--- |
+| **3.1 Acquisto B2B/B2G & Referral** | 5.2 Account-Based Marketing | 5.6 Viral Referral Loop | Esclusività istituzionale + sblocco valore |
+| **3.2 Serialità & Giornalisti-Giurati** | 5.5 Creator & Juror Ego-Bait | 5.7 Dark Social Seeding | Orgoglio territoriale e mobilitazione voto |
+| **3.3 Sponsor & Enti Territoriali** | 5.1 Partner-Led Borrowing | 5.4 Phygital Proximity | Benefit gratuito per clienti/cittadini |
+| **3.4 Grandi Istituzioni & Festival** | 5.1 List-Piggybacking | 5.4 Phygital (Programmi sala) | Halo effect e approfondimento d'autore |
+| **3.5 Editoria a Stampa (Phygital)** | 5.4 Phygital Print-to-Digital | 5.3 Content Syndication | Collezionabilità e ponte carta-video |
+| **3.6 Inchieste & "Pagina Bianca"** | 5.3 Content Atomization | 5.5 Opinion Leader Advocacy | Dibattito pubblico e pressione civica |
+| **4.1 Living Archive (Ricerca)** | 5.2 Account-Based Marketing | 5.3 Hub-and-Spoke SEO | Autorevolezza scientifica e utilità B2B |
+| **4.2 Kit Didattico Scuole** | 5.1 Reti Scolastiche Partner | 5.5 Teacher Ambassadors | Innovazione pedagogica e PCTO |
+| **4.3 Vetrina Bandi & Audizioni** | 5.7 Dark Social Seeding | 5.1 Two-Sided Network Loop | Utilità pratica urgente e passaparola |
+| **4.4 Cultural Tourism** | 5.4 Phygital (Hotel/Borghi) | 5.1 Hospitality Co-Marketing | Scoperta esperienziale del territorio |
+| **4.5 Tech & Craft Showcase** | 5.4 Phygital (Fiere/Congressi) | 5.2 B2B Sales-Enablement | Prestigio tecnologico e casi d'uso reali |
+| **4.6 Zero-Party Data & Quiz** | 5.6 Interactive Quiz Loop | 5.3 Data-PR Infographics | Curiosità identitaria e benchmark |
+| **4.7 White-Label Chiavi in Mano** | 5.2 ABM su Grandi Committenti | 5.6 PLG Footer Badge | Replicabilità comprovata e scalabilità |
+
+---
+
+## 7. Mappa di Architettura per il Sito Web Descrittivo
+
+Questa tabella guida l'agente o il web designer nella strutturazione delle pagine/sezioni del sito web descrittivo, integrando la proposta di valore con i moduli (Sez. 3 e 4) e i motori primari di diffusione (Sez. 5 e 6) in modo coerente.
+
+| Sezione del Sito Web | Target Principale | Moduli + Motori Primari Integrati | Messaggio Chiave (Value Proposition + Diffusione) |
+| :--- | :--- | :--- | :--- |
+| **Hero & Manifesto** | Tutti gli stakeholder | Sez. 1 + Sez. 5 (Panoramica) | Non un semplice ebook, ma un ecosistema editoriale progettato per viaggiare attraverso reti culturali, territori e media. |
+| **Per Fondazioni ed Enti** | Fondazioni bancarie, Regioni, Comuni | Moduli `3.1, 3.3, 4.2, 4.4` + Motori `5.1, 5.2, 5.4` | Sostieni la cultura e il territorio acquistando un'opera misurabile che entra nelle scuole, nei borghi e nei database cittadini. |
+| **Per Aziende e Brand** | Sponsor privati, Filiera Tech/Craft | Moduli `3.3, 4.5, 4.6` + Motori `5.1, 5.4, 5.6` | Trasforma la tua base clienti in una community culturale e raccogli insight proprietari con contenuti autentici, mai invasivi. |
+| **Per Istituzioni e Media** | Festival, Teatri, Editori Stampa | Moduli `3.4, 3.5, 3.6` + Motori `5.1, 5.3, 5.4, 5.5` | Amplifica la tua programmazione e il dibattito pubblico con un motore phygital, di *content atomization* e co-marketing a costo zero. |
+| **Per la Community Danza** | Scuole, Compagnie, Danzatori | Moduli `3.2, 4.1, 4.3` + Motori `5.2, 5.5, 5.7` | Racconta il tuo territorio, mobilita il tuo pubblico, accedi a bandi e archivi condivisibili con un tap. |
+| **Tecnologia & White-Label** | Imprese creative, Musei, Altri settori | Moduli `4.6, 4.7` + Motori `5.2, 5.6` | Un formato scalabile, data-driven e nativamente virale, pronto per dare voce anche al tuo progetto culturale. |
+
+---
+
+## 8. Specifiche per l'Infografica Interattiva dell'Ecosistema (SVG)
+
+### 8.1 Architettura Logica e Gerarchia Informativa
+
+L'ecosistema deve essere strutturato come un **sistema di propagazione progressiva articolato su 4 livelli gerarchici**, che mostra come il valore si genera al centro e si irradia verso l'esterno:
+
+1. **Livello 0 — Il Nucleo (Core):** L'elemento centrale da cui tutto ha origine, che rappresenta **Il Libro Multimediale** (*"Editorial First, Business by Design"*, Sez. 1).
+2. **Livello 1 — Le 13 Linee di Valorizzazione:** Il primo livello di espansione, suddiviso in due domini funzionali distinti ma complementari:
+   - *Dominio A:* I 6 Pilastri Fondamentali (moduli `3.1 – 3.6`).
+   - *Dominio B:* Le 7 Estensioni Modulari (moduli `4.1 – 4.7`).
+3. **Livello 2 — I 7 Motori di Diffusione:** Il livello intermedio di trasmissione (`5.1` Partner-Led, `5.2` ABM, `5.3` Hub-and-Spoke, `5.4` Phygital, `5.5` Ego-Bait, `5.6` Viral/PLG Loops, `5.7` Dark Social), che funge da ponte operativo tra i moduli editoriali e l'esterno.
+4. **Livello 3 — I 5 Nodi Terminali (Stakeholder & Impatti):** I destinatari finali dell'ecosistema allineati alla Sezione 7 (*Fondazioni ed Enti*, *Aziende e Brand*, *Istituzioni e Media*, *Community Danza*, *Tecnologia & White-Label*), collegati logicamente ai rispettivi motori di diffusione e moduli di valore.
+
+### 8.2 Requisiti Tecnici, Semantici e d'Interazione
+
+- **Scalabilità e Responsività:** Configurare l'SVG in modo fluido (`viewBox` proporzionato, `width="100%"` e `height="auto"`) per garantire la perfetta adattabilità su schermi desktop, tablet e mobile.
+- **Struttura Semantica per Interattività (DOM / CSS / JS):**
+  - Raggruppare ogni singola entità logica all'interno di tag `<g>` dotati di identificativi univoci (es. `id="node-3-1"`, `id="engine-5-2"`, `id="stakeholder-fondazioni"`) e attributi `data-*` relazionali allineati alle Sezioni 6 e 7 (es. `data-target="fondazioni"`, `data-modules="3.1,3.3,4.2,4.4"`, `data-engines="5.1,5.2,5.4"`).
+  - Predisporre la struttura per un **filtro interattivo per interlocutore**: selezionando un profilo esterno (es. *"Sono una Fondazione"*), il codice deve poter evidenziare l'intera filiera pertinente (Nucleo → Moduli attivi → Motori coinvolti → Nodo Stakeholder) attenuando gli elementi non rilevanti per quel profilo.
+- **Densità Informativa e Delega ai Tooltip:** Mantenere le etichette testuali interne all'SVG estremamente sintetiche (massimo 2-3 parole chiave per nodo) per preservare la leggibilità, delegando le descrizioni estese, i temi editoriali e i KPI a un pannello laterale o a un tooltip HTML dinamico attivato al clic o al passaggio del cursore.
