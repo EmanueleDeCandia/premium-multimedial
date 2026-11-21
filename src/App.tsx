@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { AnimatePresence, MotionConfig } from "framer-motion";
 import { AppContext, type AppContextValue, type ProposalRequest } from "./context";
 import type { EditionId, StakeholderId } from "./data/content";
@@ -18,10 +18,38 @@ import { FAQ } from "./components/FAQ";
 import { CTA } from "./components/CTA";
 import { Footer } from "./components/Footer";
 import { Reader } from "./components/Reader";
+import { SimulatorPage } from "./components/simulator/SimulatorPage";
+
+const isSimulatorRoute = () => {
+  if (typeof window === "undefined") return false;
+  const h = window.location.hash.toLowerCase();
+  const q = new URLSearchParams(window.location.search).get("page")?.toLowerCase();
+  return h === "#/simulatore" || h === "#simulatore" || q === "simulatore";
+};
 
 export default function App() {
+  const [simulator, setSimulator] = useState(isSimulatorRoute);
   const [reader, setReader] = useState<{ edition: EditionId; moduleId?: string } | null>(null);
   const [proposal, setProposal] = useState<ProposalRequest>({ nonce: 0 });
+
+  useEffect(() => {
+    const sync = () => setSimulator(isSimulatorRoute());
+    window.addEventListener("hashchange", sync);
+    window.addEventListener("popstate", sync);
+    return () => {
+      window.removeEventListener("hashchange", sync);
+      window.removeEventListener("popstate", sync);
+    };
+  }, []);
+
+  const exitSimulator = useCallback(() => {
+    const url = new URL(window.location.href);
+    url.hash = "";
+    url.searchParams.delete("page");
+    window.history.pushState({}, "", url.toString());
+    setSimulator(false);
+    window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
+  }, []);
 
   const openReader = useCallback((edition: EditionId, moduleId?: string) => setReader({ edition, moduleId }), []);
   const closeReader = useCallback(() => setReader(null), []);
@@ -32,6 +60,14 @@ export default function App() {
   }, []);
 
   const ctx = useMemo<AppContextValue>(() => ({ openReader, requestProposal, proposal }), [openReader, requestProposal, proposal]);
+
+  if (simulator) {
+    return (
+      <MotionConfig reducedMotion="user">
+        <SimulatorPage onBack={exitSimulator} />
+      </MotionConfig>
+    );
+  }
 
   return (
     <MotionConfig reducedMotion="user">
