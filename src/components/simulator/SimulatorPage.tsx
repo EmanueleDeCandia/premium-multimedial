@@ -42,6 +42,7 @@ export function SimulatorPage({ onBack }: { onBack: () => void }) {
   const exportJson = () => {
     const payload = {
       exportedAt: new Date().toISOString(),
+      version: "v2",
       preset,
       inputs,
       results: {
@@ -54,7 +55,7 @@ export function SimulatorPage({ onBack }: { onBack: () => void }) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `business-case-calibrato-${preset}.json`;
+    a.download = `business-case-calibrato-v2-${preset}.json`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -63,13 +64,13 @@ export function SimulatorPage({ onBack }: { onBack: () => void }) {
     const p = result.pnl;
     const a = result.audience;
     const lines = [
-      `# Riepilogo Calibrazione Business Case (${preset})`,
+      `# Riepilogo Calibrazione Business Case v2 (${preset})`,
       `- Ricavi Cash 24M: €${Math.round(p.totalRevenueCash24m).toLocaleString("it-IT")} (Y1: €${Math.round(p.revenueY1Cash).toLocaleString("it-IT")} | Y2: €${Math.round(p.revenueY2Cash).toLocaleString("it-IT")})`,
-      `- Commissioni Turismo 4.4: €${Math.round(p.tourismCommissionRevenue24m).toLocaleString("it-IT")} (${inputs.tCommissioneStartupPct}%)`,
-      `- Azioni monetizzate DB Istituzioni: €${Math.round(p.institutionDbMonetized24m).toLocaleString("it-IT")}`,
+      `- Ricavi Diretti Contest Trailer (3.2): €${Math.round(p.contestDirectRevenue24m).toLocaleString("it-IT")} | Commissioni Turismo 4.4: €${Math.round(p.tourismCommissionRevenue24m).toLocaleString("it-IT")} (${inputs.tCommissioneStartupPct}%)`,
+      `- Fondo Vota/Sblocca Donando (netto a Stakeholder): €${Math.round(p.votaDonandoNetToStakeholders24m).toLocaleString("it-IT")}`,
       `- Barter Tecnico (riduzione COGS): €${Math.round(p.barterValue24m).toLocaleString("it-IT")}`,
-      `- EBITDA 24M: €${Math.round(p.ebitda24m).toLocaleString("it-IT")} (${p.ebitdaMarginPct.toFixed(1)}%) | Picco Cassa Y1 con DSO ${inputs.dsoGiorniIncassoB2G}gg: €${Math.round(p.peakCashNeedY1).toLocaleString("it-IT")}`,
-      `- Audience: Reach Unica ${Math.round(a.uniqueReach).toLocaleString("it-IT")} | K=${inputs.kViralita} | Lettori Attivi ${Math.round(a.totalActiveReaders).toLocaleString("it-IT")} | CAC diretto €${a.directCacEur.toFixed(2)} | CAC fully-loaded €${a.fullyLoadedCacEur.toFixed(2)}`,
+      `- EBITDA 24M: €${Math.round(p.ebitda24m).toLocaleString("it-IT")} (${p.ebitdaMarginPct.toFixed(1)}%) | Picco Cassa Y1 (DSO B2G ${inputs.dsoGiorniIncassoB2G}gg / B2B ${inputs.dsoGiorniIncassoB2B}gg): €${Math.round(p.peakCashNeedY1).toLocaleString("it-IT")}`,
+      `- Audience: Contest (${Math.round(a.contestStudentsTot)} studenti × K=${a.contestKFactor.toFixed(2)} = ${Math.round(a.contestViewersVoters)} votanti) | Lettori Attivi Totali ${Math.round(a.totalActiveReaders).toLocaleString("it-IT")} | CAC diretto €${a.directCacEur.toFixed(2)} | CAC fully-loaded €${a.fullyLoadedCacEur.toFixed(2)}`,
       ...stakeholders.map((s) => {
         const st = result.stakeholders[s.id];
         return `- ${s.label}: Startup €${Math.round(st.startupMonetaryEur).toLocaleString("it-IT")} | Stakeholder €${Math.round(st.stakeholderMonetaryEur).toLocaleString("it-IT")}`;
@@ -85,6 +86,7 @@ export function SimulatorPage({ onBack }: { onBack: () => void }) {
   };
 
   const totalRev = result.pnl.totalRevenueCash24m;
+  const raw = result.stakeholders.raw;
 
   return (
     <div className="min-h-screen bg-ivory text-ink">
@@ -95,7 +97,7 @@ export function SimulatorPage({ onBack }: { onBack: () => void }) {
             <Logo />
             <span className="hidden h-5 w-px bg-ink/15 sm:block" />
             <span className="hidden rounded-full bg-crimson/10 px-3 py-1 font-mono text-[11px] font-semibold text-crimson sm:inline-flex">
-              Simulatore Pure-Input · model-business
+              Simulatore Business Case v2 · model-business
             </span>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -124,18 +126,18 @@ export function SimulatorPage({ onBack }: { onBack: () => void }) {
           <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-3xl">
               <p className="eyebrow inline-flex items-center gap-2 text-[#F4977F]">
-                <SlidersHorizontal className="h-3.5 w-3.5" /> Calibration Workbench · Zero costanti fisse
+                <SlidersHorizontal className="h-3.5 w-3.5" /> Calibration Workbench v2 · Core Contest + CLV + Zero Costanti Nascoste
               </p>
               <h1 className="mt-3 text-balance font-display text-3xl leading-[1.06] sm:text-5xl">
                 Simulatore Parametrico per <em className="text-[#F4977F]">Startup e 5 Stakeholder</em>.
               </h1>
               <p className="mt-3 text-sm leading-relaxed text-white/70 sm:text-base">
-                Ogni prezzo, tasso, commissione (0%–80%+), CPM (default €90 su sola reach incrementale), viralità (K libero) e
-                valore d’obiettivo è una variabile di <strong className="text-white">INPUT</strong> con formula live e nota esplicativa.
+                Motore causale unificato: <strong className="text-white">Contest Online con Trailer</strong> (Compagnie & Scuole di Danza),{" "}
+                <strong className="text-white">Vota Donando</strong> ripartibile, <strong className="text-white">3 Basi Aziende + CLV (€500 / €2.500)</strong>,{" "}
+                <strong className="text-white">Commissioni Turismo (0%–80%+)</strong> e <strong className="text-white">CPM €90</strong> su sola reach incrementale Startup.
               </p>
             </div>
 
-            {/* Selettore Preset */}
             <div className="flex flex-col items-start gap-2 lg:items-end">
               <div className="flex flex-wrap gap-2">
                 {(Object.keys(PRESETS) as PresetId[]).map((id) => {
@@ -166,7 +168,7 @@ export function SimulatorPage({ onBack }: { onBack: () => void }) {
               </div>
               <p className="max-w-xl text-left text-xs text-white/55 lg:text-right">
                 {preset === "custom"
-                  ? "Stai testando una calibrazione personalizzata. Ogni cambiamento aggiorna live P&L, CAC, cassa e attribuzioni."
+                  ? "Stai testando una calibrazione personalizzata. Ogni cambiamento ricalcola istantaneamente P&L, Contest, CLV, cassa DSO e attribuzioni."
                   : PRESETS[preset].description}
               </p>
             </div>
@@ -188,33 +190,33 @@ export function SimulatorPage({ onBack }: { onBack: () => void }) {
                 delta: `Break-even €${formatNumber(Math.round(result.pnl.breakEvenRevenue24m))}`,
               },
               {
-                label: "Picco Cassa Y1 (DSO)",
+                label: "Picco Cassa Y1 (DSO Duale)",
                 val: `€${formatNumber(Math.round(result.pnl.peakCashNeedY1))}`,
                 sub: `Crediti fine Y1: €${formatNumber(Math.round(result.pnl.receivablesEndY1FromDso))}`,
-                delta: `DSO B2G: ${inputs.dsoGiorniIncassoB2G} gg`,
+                delta: `DSO PA ${inputs.dsoGiorniIncassoB2G}gg · B2B ${inputs.dsoGiorniIncassoB2B}gg`,
               },
               {
-                label: "Commissioni & DB Enti",
-                val: `€${formatNumber(Math.round(result.pnl.tourismCommissionRevenue24m + result.pnl.institutionDbMonetized24m))}`,
-                sub: `Turismo ${inputs.tCommissioneStartupPct}% (€${formatNumber(Math.round(result.pnl.tourismCommissionRevenue24m))})`,
-                delta: `DB Enti: €${formatNumber(Math.round(result.pnl.institutionDbMonetized24m))}`,
+                label: "Contest & Vota Donando",
+                val: `€${formatNumber(Math.round(result.pnl.contestDirectRevenue24m))}`,
+                sub: `Donazioni nette enti/comm.: €${formatNumber(Math.round(result.pnl.votaDonandoNetToStakeholders24m))}`,
+                delta: `${raw.cContestParticipants} realtà · ${formatNumber(Math.round(raw.cContestVoters))} votanti`,
               },
               {
-                label: "Lettori Attivi (Live)",
+                label: "Lettori Attivi Totali",
                 val: formatNumber(Math.round(result.audience.totalActiveReaders)),
-                sub: `Primari ${formatNumber(Math.round(result.audience.primaryReaders))} × ${result.audience.viralMultiplier.toFixed(2)}x`,
-                delta: `K = ${inputs.kViralita.toFixed(2)} (netto +${result.audience.effectiveKNet.toFixed(2)})`,
+                sub: `Opera ${formatNumber(Math.round(result.audience.primaryReaders))}×${result.audience.viralMultiplier.toFixed(2)} + DB Sponsor`,
+                delta: `K_contest=${result.audience.contestKFactor.toFixed(2)} · K_opera=${inputs.kViralitaOpera.toFixed(2)}`,
               },
               {
                 label: "CAC Derivato (Reale)",
                 val: `€${result.audience.directCacEur.toFixed(2).replace(".", ",")}`,
                 sub: `Fully-Loaded (incl. Sales): €${result.audience.fullyLoadedCacEur.toFixed(2).replace(".", ",")}`,
-                delta: `Profili ZPD: ${formatNumber(Math.round(result.audience.zeroPartyProfiles))}`,
+                delta: `ZPD: ${formatNumber(Math.round(result.audience.zeroPartyProfiles))} | Comm. 4.4: €${formatNumber(Math.round(result.pnl.tourismCommissionRevenue24m))}`,
               },
             ].map((k) => (
               <div key={k.label} className="glass-dark rounded-2xl p-4">
                 <dt className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/55">{k.label}</dt>
-                <dd className="mt-1.5 font-display text-2xl text-white tabular-nums sm:text-[1.7rem]">{k.val}</dd>
+                <dd className="mt-1.5 font-display text-2xl text-white tabular-nums sm:text-[1.65rem]">{k.val}</dd>
                 <p className="mt-1 text-[11px] text-white/70">{k.sub}</p>
                 <p className="mt-1 font-mono text-[10px] text-[#F4977F]">{k.delta}</p>
               </div>
@@ -225,8 +227,8 @@ export function SimulatorPage({ onBack }: { onBack: () => void }) {
           <div className="glass-dark mt-4 rounded-2xl p-4 sm:p-5">
             <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
               <span className="font-semibold uppercase tracking-[0.16em] text-white/60">
-                Composizione Ricavi Cash Startup 24M (Barter €{formatNumber(Math.round(result.pnl.barterValue24m))} & Borse €
-                {formatNumber(Math.round(result.pnl.passThroughScholarshipFund24m))} esclusi dal Cash)
+                Composizione Ricavi Cash Startup 24M (Barter €{formatNumber(Math.round(result.pnl.barterValue24m))} & Vota Donando netto €
+                {formatNumber(Math.round(result.pnl.votaDonandoNetToStakeholders24m))} separati dal Cash)
               </span>
               <span className="font-mono text-white/70">Totale Cash: €{formatNumber(Math.round(totalRev))}</span>
             </div>
@@ -256,7 +258,7 @@ export function SimulatorPage({ onBack }: { onBack: () => void }) {
         </div>
       </section>
 
-      {/* Navigazione Tab (P&L Globale + 5 Stakeholder) */}
+      {/* Navigazione Tab */}
       <div className="sticky top-[68px] z-30 border-b border-ink/10 bg-ivory/90 backdrop-blur-md">
         <div className="no-scrollbar mx-auto flex max-w-7xl gap-2 overflow-x-auto px-5 py-3 sm:px-8">
           <button
@@ -268,7 +270,7 @@ export function SimulatorPage({ onBack }: { onBack: () => void }) {
                 : "border-ink/10 bg-white/70 text-ink/75 hover:bg-white hover:text-ink",
             )}
           >
-            <TrendingUp className="h-4 w-4" /> Regia P&L, Costi, Viralità & CPM
+            <TrendingUp className="h-4 w-4" /> Regia P&L, Costi, Viralità & DSO
           </button>
 
           {stakeholders.map((s) => {
@@ -296,13 +298,12 @@ export function SimulatorPage({ onBack }: { onBack: () => void }) {
       <main className="mx-auto max-w-7xl px-5 py-10 sm:px-8 sm:py-14">
         {tab === "overview" ? (
           <div className="space-y-8">
-            {/* Riepilogo Comparativo 5 Stakeholder */}
             <section className="rounded-[28px] border border-ink/10 bg-white/75 p-5 sm:p-7">
-              <p className="eyebrow text-crimson">Quadro d'insieme · Benefici separati per attore</p>
+              <p className="eyebrow text-crimson">Quadro d'insieme v2 · Benefici separati per attore</p>
               <h2 className="mt-1 font-display text-3xl text-ink">Confronto Startup vs 5 Stakeholder (24 Mesi)</h2>
               <p className="mt-2 text-sm text-ink/65">
-                Ogni riga mostra separatamente ciò che entra nelle casse della Startup, ciò che costituisce beneficio monetario/economico dello
-                Stakeholder (costi evitati, indotto, obiettivi raggiunti, borse) e il principale beneficio non monetario.
+                Include i ricavi dei Contest Online con Trailer, le commissioni Turismo (0%–80%+), la ripartizione di "Vota Donando", i 3 DB delle Aziende
+                con CLV (€500 B2C / €2.500 B2B) e l'eliminazione di ogni doppio conteggio su licenze e DB Istituzioni.
               </p>
               <div className="mt-6 overflow-x-auto">
                 <table className="w-full min-w-[760px] text-left text-sm">
@@ -310,7 +311,7 @@ export function SimulatorPage({ onBack }: { onBack: () => void }) {
                     <tr className="border-b border-ink/10 text-[11px] uppercase tracking-[0.14em] text-ink/50">
                       <th className="py-3 pr-4">Stakeholder (Livello 3)</th>
                       <th className="px-4 py-3">Startup · Monetario Cash</th>
-                      <th className="px-4 py-3">Stakeholder · Valore / Risparmio</th>
+                      <th className="px-4 py-3">Stakeholder · Valore / CLV / Risparmio</th>
                       <th className="px-4 py-3">Benefici Non Monetari Chiave</th>
                       <th className="py-3 pl-4 text-right">Apri Scheda</th>
                     </tr>
@@ -356,25 +357,28 @@ export function SimulatorPage({ onBack }: { onBack: () => void }) {
               </div>
             </section>
 
-            {/* Controlli Globali Viralità, CPM, Costi & DSO */}
+            {/* Controlli Globali (zero costanti hardcoded!) */}
             <section className="rounded-[28px] border border-ink/10 bg-white/70 p-5 sm:p-7">
               <div className="border-b border-ink/10 pb-4">
-                <p className="eyebrow text-crimson">Variabili di Regia Startup (Pure-Input)</p>
-                <h3 className="mt-1 font-display text-2xl text-ink">Viralità (K), CPM Culturale (€90), Costi Completi & Cassa (DSO)</h3>
+                <p className="eyebrow text-crimson">Variabili di Regia Startup (100% Pure-Input · Zero Costanti Hardcoded)</p>
+                <h3 className="mt-1 font-display text-2xl text-ink">Viralità Opera, CPM Culturale, Costi Completi & DSO Duale</h3>
                 <p className="mt-1.5 text-xs leading-relaxed text-ink/65">
-                  Modificando questi parametri vedi in tempo reale come il CAC smette di essere una costante fissa (€0,40 sul sito) e diventa il risultato
-                  matematico tra costi effettivi, deduplicazione e viralità scelta.
+                  Anche le quote temporali di Capex/Opex Anno 1, la deduplicazione utenti e il DSO B2G/B2B sono ora variabili libere editabili.
                 </p>
               </div>
               <div className="mt-5 grid gap-4 md:grid-cols-2">
                 {(
                   [
-                    "kViralita",
+                    "kViralitaOpera",
                     "decadimentoViralePct",
                     "cpmCulturaleEur",
                     "sovrapposizioneCanaliPct",
+                    "dedupUtentiSuSessioniPct",
                     "quotaRicaviAnno1Pct",
+                    "quotaCapexAnno1Pct",
+                    "quotaOpexFissiAnno1Pct",
                     "dsoGiorniIncassoB2G",
+                    "dsoGiorniIncassoB2B",
                     "capexPiattaforma24m",
                     "costiFissiRedazione24m",
                     "costiSalesAbm24m",
@@ -390,7 +394,7 @@ export function SimulatorPage({ onBack }: { onBack: () => void }) {
             {/* Formule Live Globali */}
             <section className="rounded-[28px] border border-ink/10 bg-white/75 p-5 sm:p-7">
               <p className="eyebrow text-crimson">Verifica formule consolidate</p>
-              <h3 className="mt-1 font-display text-2xl text-ink">Equazioni Live: Viralità, CAC & EBITDA / Cassa</h3>
+              <h3 className="mt-1 font-display text-2xl text-ink">Equazioni Live: Audience Unificata, CAC & EBITDA / Cassa DSO</h3>
               <div className="mt-5 grid gap-4 lg:grid-cols-2">
                 {result.audience.formulas.map((f) => (
                   <FormulaCard key={f.id} trace={f} />

@@ -1,13 +1,22 @@
 /* =========================================================================
-   Modello Parametrico Pure-Input del Business Case ("Finestre sulla Danza")
+   Modello Parametrico Pure-Input v2 ("Finestre sulla Danza")
    Branch: model-business
-   Principi:
-   - Ogni prezzo, tasso, commissione (0%-80%+), CPM (€90 default), K-factor (0-3+)
-     e valore d'obiettivo stakeholder è una variabile di INPUT libera.
-   - Nessuna costante arbitraria nascosta; ogni catena espone la formula live
-     e una nota esplicativa chiara su assunzioni e correzione dei bias.
-   - Separazione rigorosa a 4 quadranti: Startup (Monetario / Non Monetario)
-     vs Stakeholder (Monetario / Non Monetario).
+   Novità architetturali v2 (da revisione-simulatore.md):
+   1. Motore Core Contest Online con Trailer (Compagnie + Scuole di Danza × Studenti
+      × Inviti × Conv% = K_contest reale) con 3 monetizzazioni dirette
+      (Iscrizioni, Licenze Concorso, Vota Donando + Sblocca Donando €2).
+   2. Flusso "Vota Donando" ripartibile via INPUT tra Community (80%),
+      Fondazioni/Enti (20%), Aziende ESG (0%) ed eventuale Fee Startup (0%).
+   3. Origine chiara delle basi di Fondazioni & Comuni: licenze acquistate da
+      Fondazioni e Comuni distribuite per promuovere spettacoli, contest e
+      scuole di danza locali (0 contratti = 0 attivazioni B2G).
+   4. Aziende e Brand con 3 basi distinte: (a) CRM proprio sponsor (Retention /
+      Loyalty / Crisis), (b) Pool Cross-Sponsor orchestrato dalla Startup,
+      (c) DB proprietario segmentato dalla Startup (20.000/azienda default)
+      + Trailer Contest. Introduzione CLV duale: €500 B2C e €2.500 B2B Tech.
+   5. Zero doppio conteggio su licenze diffuse da DB Istituzioni; Engagement S3
+      separato tra micro-obiettivi e macro-obiettivi discreti; zero costanti
+      hardcoded nascoste; DSO duale (B2G/PA vs B2B privato).
    ========================================================================= */
 
 import type { StakeholderId } from "./content";
@@ -15,13 +24,17 @@ import type { StakeholderId } from "./content";
 export type PresetId = "realistico" | "sitoOriginario" | "esigenzaAltaPosta" | "conservativo";
 
 export interface SimulatorInputs {
-  // 0. Diffusione, Viralità, Engagement Obiettivo & Finanza Startup
+  // 0. Diffusione Globale, Viralità Opera, Engagement, Costi & DSO Duale
   sovrapposizioneCanaliPct: number;
-  kViralita: number;
+  kViralitaOpera: number;
   decadimentoViralePct: number;
   cpmCulturaleEur: number;
+  dedupUtentiSuSessioniPct: number;
   quotaRicaviAnno1Pct: number;
+  quotaCapexAnno1Pct: number;
+  quotaOpexFissiAnno1Pct: number;
   dsoGiorniIncassoB2G: number;
+  dsoGiorniIncassoB2B: number;
   capexPiattaforma24m: number;
   costiFissiRedazione24m: number;
   costiSalesAbm24m: number;
@@ -36,43 +49,54 @@ export interface SimulatorInputs {
   f3Contratti24m: number;
   f3PrezzoEur: number;
   fCogsPct: number;
-  fDbEntiContattiTot: number;
-  fDbRedemptionPct: number;
-  fDbLetturaProfondaPct: number;
-  fIstitutiAttivati: number;
-  fClassiPerIstituto: number;
+  fLicenzeMediePerEnte: number;
+  fContattiCanaliLocaliPerEnte: number;
+  fRedemptionEntiPct: number;
+  fLetturaProfondaEntiPct: number;
+  fScuoleDanzaPerEnte: number;
+  fClassiGruppiPerScuola: number;
   fCompletamentoDidatticoPct: number;
   fCapexEvitatoPerEnteEur: number;
   // 4.4 Turismo Dual-Flow
   tAccessiGratuitiTerritorio: number;
+  tTurismoLetturaProfondaPct: number;
   tEstensioneSoggiornoPct: number;
   tGiorniExtraMedi: number;
   tSpesaGiornalieraTerritorioEur: number;
   tAccessiBookingStartup: number;
   tConvBookingPct: number;
   tScontrinoMedioServizioEur: number;
-  tCommissioneStartupPct: number; // 0% - 80%+
+  tCommissioneStartupPct: number;
+  tCogsGestioneBookingPct: number;
 
-  // 2. Aziende e Brand (3.3-B2B, 4.5, 4.6-Insight + Loyalty/Crisis)
+  // 2. Aziende e Brand (3.3-B2B, 4.5, 4.6-Insight, Cross-DB, Trailer & CLV Duale)
   aCultContratti24m: number;
   aCultPrezzoEur: number;
   aCogsCultPct: number;
-  aCultCrmContattiTot: number;
-  aCultRedemptionPct: number;
-  aCultLetturaProfondaPct: number;
   aTechContratti24m: number;
   aTechTicketLordoEur: number;
   aTechBarterPct: number;
   aCogsTechLordoPct: number;
-  aLeadPerTechPartner: number;
-  aSqlRatePct: number;
-  aCplFieraComparabileEur: number;
+  aSponsorTrailerAutonomi: number;
+  aPrezzoSponsorTrailerEur: number;
+  aCrmProprioPerAzienda: number;
+  aQuotaScambioCrossSponsorPct: number;
+  aDbProprioStartupPerAzienda: number;
+  aQuotaAudienceOperaEspostaPct: number;
+  aRedemptionCrmProprioPct: number;
+  aClickLoyaltyCrisisPct: number;
+  aConvRetentionLoyaltyPct: number;
+  aQuotaClvSalvataRetentionPct: number;
+  aAperturaNuoviContattiStartupPct: number;
+  aTassoLeadSuLettoriNuoviPct: number;
+  aTassoChiusuraVenditaB2cPct: number;
+  aTassoChiusuraVenditaB2bPct: number;
+  aClvB2cEur: number; // default €500
+  aClvB2bTechEur: number; // default €2.500
+  aCplComparabileMercatoEur: number;
   aSurveyCompletionPct: number;
   aGdprOptInPct: number;
   aValoreRicercaEvitataBrandEur: number;
-  aClickPopupImportantePct: number;
-  aConvObiettivoBrandPct: number;
-  aValoreObiettivoBrandEur: number;
 
   // 3. Istituzioni Culturali e Media (3.4, 3.5, 3.6)
   iSpeciali24m: number;
@@ -80,17 +104,19 @@ export interface SimulatorInputs {
   iReachStartupIncrementale: number;
   iCostoProdEvitatoEnteEur: number;
   iCostoDirettoStartupSpecialeEur: number;
-  iConvDbIstituzioneAzioniStartupPct: number;
-  iValoreMedioAzioneMonetizzataEur: number;
+  iQuotaDbVersoTurismoPct: number;
+  iQuotaDbVersoContestPct: number;
   iMoltiplicatoreAutorevolezzaPct: number;
   iContattiB2BOriginePerSpeciale: number;
   iConvPipelineIstituzioniPct: number;
   iValoreMedioDealPipelineEur: number;
   iAperturaContenutoPct: number;
+  iLetturaProfondaSuAperturaPct: number;
   iClickEventoImportantePct: number;
-  iConvObiettivoIstituzionePct: number;
-  iValoreObiettivoIstituzioneEur: number;
-  iValoreProgettoSpecialeFissoEur: number;
+  iConvMicroObiettivoIstituzionePct: number;
+  iValoreMicroObiettivoIstituzioneEur: number;
+  iMacroProgettiFinanziatiCount: number;
+  iValoreMacroProgettoEur: number;
   iCopieStampaEsposte: number;
   iQrScanPct: number;
   iStampaLetturaProfondaPct: number;
@@ -99,22 +125,39 @@ export interface SimulatorInputs {
   iRipreseStampaPerCiclo: number;
   iRispostaIstituzionalePct: number;
 
-  // 4. Community Danza & Ricerca Istituzionale (3.2, 4.3, 4.1)
+  // 4. Contest Online Trailer, Vota Donando, Bandi & Living Archive (3.2, 4.3, 4.1)
   cTappe24m: number;
-  cVotiPerTappa: number;
+  cCompagnieContest: number;
+  cScuoleContest: number;
+  cStudentiPerCompagnia: number;
+  cStudentiPerScuola: number;
+  cPrezzoIscrizioneCompagniaEur: number;
+  cPrezzoIscrizioneScuolaEur: number;
+  cLicenzeMediePerPartecipante: number;
+  cPrezzoLicenzaConcorsoEur: number;
+  cInvitiMediPerStudente: number;
+  cConvInvitiContestPct: number;
+  cSovrapposizioneContestPct: number;
+  cQuotaSpettatoriLettoriOperaPct: number;
   cTassoDonantiSuVotantiPct: number;
-  cDonazioneMediaEur: number;
-  cFeeGestioneStartupPct: number;
+  cDonazioneMediaVotoEur: number;
+  cTassoSbloccaDonandoReaderPct: number;
+  cImportoSbloccaDonandoEur: number;
   cCostoGatewayPct: number;
+  cFeeGestioneStartupDonazioniPct: number;
+  cQuotaDonazioniCommunityPct: number;
+  cQuotaDonazioniFondazioniPct: number;
+  cQuotaDonazioniAziendeEsgPct: number;
   cValoreBorsaEur: number;
   cRitenzioneSerialePct: number;
-  cCommunitySemiOrganici: number;
+  cCostoVariabilePerPartecipanteEur: number;
+  cCostoFissoPerTappaGiuriaEur: number;
   cReturningMau: number;
   cVisiteAnnuePerMau: number;
   cCtrCallPct: number;
   cFeaturedCalls24m: number;
   cFeaturedCallPrezzoEur: number;
-  cCostiCommunityOps24m: number;
+  cCostiCuratelaBandi24m: number;
   cArchiveLicenzeY1: number;
   cArchiveNuoveY2: number;
   cArchiveRinnovoPct: number;
@@ -126,8 +169,9 @@ export interface SimulatorInputs {
   tPrezzoSottosogliaEur: number;
   tCommesseEnterprise24m: number;
   tPrezzoEnterpriseEur: number;
+  tRinnovoSaasY2Pct: number;
   tCanoneSaasAnnuoEur: number;
-  tCommesseY1AttiveSaas: number;
+  tCogsSaasPct: number;
   tCostoMarginaleProduzionePct: number;
   tQuotaLeadPlgBadgePct: number;
   tCapexAlternativoClienteEur: number;
@@ -154,27 +198,27 @@ export const INPUT_META: Record<keyof SimulatorInputs, InputFieldMeta> = {
     min: 0,
     max: 70,
     step: 1,
-    assumptionNote: "Quota stimata di persone raggiunte su più canali (es. lettori sia da festival che da social) sottratta per calcolare la reach unica deduplicata.",
-    biasNote: "Il sito originario somma le audience di canale senza esplicitare la deduplicazione.",
+    assumptionNote: "Quota stimata di persone raggiunte su più canali (es. sia da festival che da contest/social) sottratta per calcolare la reach unica.",
+    biasNote: "Il sito originario sommava i canali senza esplicitare alcuna deduplicazione.",
   },
-  kViralita: {
-    key: "kViralita",
-    label: "Coefficiente di viralità (K-factor)",
+  kViralitaOpera: {
+    key: "kViralitaOpera",
+    label: "Viralità organica generale dell'Opera (K-factor)",
     unit: "x",
     min: 0,
     max: 3,
     step: 0.05,
-    assumptionNote: "Nuovi lettori generati in prima ondata da ogni lettore primario (K = inviti × tasso di conversione). Può essere 0 (nessuna viralità) o 2+ (alta mobilitazione).",
-    biasNote: "Sul sito era bloccato a K = 1,35 senza decadimento, portando matematicamente a crescita infinita.",
+    assumptionNote: "Viralità generale dei lettori dell'ebook (esclusa la spinta specifica dei contest già calcolata da Studenti × Inviti × Conv%). Può essere 0 o 2.",
+    biasNote: "Sul sito era bloccato a K = 1,35 senza distinzione tra pubblico contest e pubblico editoriale.",
   },
   decadimentoViralePct: {
     key: "decadimentoViralePct",
-    label: "Smorzamento di saturazione per ondata",
+    label: "Smorzamento di rete tra ondate successive",
     unit: "%",
     min: 0,
     max: 90,
     step: 5,
-    assumptionNote: "Riduzione della conversione virale tra la 1ª, 2ª e 3ª ondata dovuta al fatto che le community culturali si sovrappongono rapidamente.",
+    assumptionNote: "Decadimento fisiologico della viralità dalla 1ª alla 3ª ondata per saturazione delle community.",
   },
   cpmCulturaleEur: {
     key: "cpmCulturaleEur",
@@ -183,8 +227,17 @@ export const INPUT_META: Record<keyof SimulatorInputs, InputFieldMeta> = {
     min: 0,
     max: 300,
     step: 5,
-    assumptionNote: "Valore equivalente per 1.000 contatti nuovi e diversi rispetto al DB già posseduto dall'Istituzione. Default €90 CPM tipico dei media culturali verticali ad alta affinità.",
-    biasNote: "Corregge il €1,20/contatto (= €1.200 CPM) del sito applicato indiscriminatamente anche alla mailing list propria dell'ente.",
+    assumptionNote: "Valore equivalente per 1.000 contatti diversi dal DB già posseduto dall'Istituzione. Default €90 CPM.",
+    biasNote: "Corregge il €1,20/contatto (= €1.200 CPM) applicato sul sito anche alla mailing list dell'ente.",
+  },
+  dedupUtentiSuSessioniPct: {
+    key: "dedupUtentiSuSessioniPct",
+    label: "Rapporto utenti unici su sessioni attive totali",
+    unit: "%",
+    min: 40,
+    max: 100,
+    step: 1,
+    assumptionNote: "Fattore di conversione da letture/sessioni attive a persone fisiche uniche (sostituisce la vecchia costante 0,85 nascosta).",
   },
   quotaRicaviAnno1Pct: {
     key: "quotaRicaviAnno1Pct",
@@ -193,26 +246,53 @@ export const INPUT_META: Record<keyof SimulatorInputs, InputFieldMeta> = {
     min: 10,
     max: 70,
     step: 2,
-    assumptionNote: "Ripartizione temporale dei ricavi su 24 mesi: in Anno 1 si costruisce piattaforma/pilota (es. 30%-35%), in Anno 2 scala e rinnovi (65%-70%).",
+    assumptionNote: "Ripartizione dei ricavi 24M tra Anno 1 (build & lancio) e Anno 2 (scala & rinnovi).",
+  },
+  quotaCapexAnno1Pct: {
+    key: "quotaCapexAnno1Pct",
+    label: "Quota Capex piattaforma sostenuta in Anno 1",
+    unit: "%",
+    min: 30,
+    max: 100,
+    step: 5,
+    assumptionNote: "Quota dell'investimento tech iniziale concentrata nei primi 12 mesi (sostituisce la vecchia costante 75%).",
+  },
+  quotaOpexFissiAnno1Pct: {
+    key: "quotaOpexFissiAnno1Pct",
+    label: "Quota costi fissi redazione/sales/G&A in Anno 1",
+    unit: "%",
+    min: 30,
+    max: 70,
+    step: 2,
+    assumptionNote: "Incidenza sui primi 12 mesi di redazione, sales e struttura (sostituisce la vecchia costante 48%).",
   },
   dsoGiorniIncassoB2G: {
     key: "dsoGiorniIncassoB2G",
-    label: "Tempi medi incasso Enti/Fondazioni (DSO)",
+    label: "DSO · Tempi medi incasso Enti, PA, Atenei & Musei",
     unit: "gg",
     min: 0,
     max: 240,
     step: 15,
-    assumptionNote: "Giorni medi tra fatturazione e incasso effettivo da PA, Regioni e Fondazioni. Impatta il capitale circolante e il fabbisogno di cassa reale.",
-    biasNote: "Completamente omesso sul sito: un contratto firmato a ottobre può essere incassato nell'anno successivo.",
+    assumptionNote: "Giorni medi d'incasso su Fondazioni, Comuni, Università (4.1) e Musei White-Label (4.7).",
+    biasNote: "Nella v1 era applicato solo a Fondazioni escludendo Università e Musei pubblici.",
+  },
+  dsoGiorniIncassoB2B: {
+    key: "dsoGiorniIncassoB2B",
+    label: "DSO · Tempi medi incasso Aziende Private & B2B",
+    unit: "gg",
+    min: 0,
+    max: 180,
+    step: 15,
+    assumptionNote: "Giorni medi di incasso delle fatture verso imprese private sponsor e partner tech.",
   },
   capexPiattaforma24m: {
     key: "capexPiattaforma24m",
-    label: "Capex piattaforma tech & tracking interattivo (24M)",
+    label: "Capex piattaforma tech, player & contest engine (24M)",
     unit: "€",
     min: 0,
     max: 200000,
     step: 5000,
-    assumptionNote: "Sviluppo web-app multimediale, player 4K, mappe, telemetria popup interattivi, QR/NFC e modularizzazione White-Label.",
+    assumptionNote: "Sviluppo web-app multimediale, piattaforma contest trailer/voti, tracking popup interattivi e modularizzazione White-Label.",
   },
   costiFissiRedazione24m: {
     key: "costiFissiRedazione24m",
@@ -221,7 +301,7 @@ export const INPUT_META: Record<keyof SimulatorInputs, InputFieldMeta> = {
     min: 0,
     max: 350000,
     step: 5000,
-    assumptionNote: "Direzione editoriale, autori indipendenti, montaggio base e produzione dossier d'inchiesta indipendenti dai singoli contratti.",
+    assumptionNote: "Direzione editoriale, autori indipendenti e dossier d'inchiesta indipendenti dai singoli contratti.",
   },
   costiSalesAbm24m: {
     key: "costiSalesAbm24m",
@@ -230,7 +310,7 @@ export const INPUT_META: Record<keyof SimulatorInputs, InputFieldMeta> = {
     min: 0,
     max: 250000,
     step: 4000,
-    assumptionNote: "Compensi commerciali, preparazione cofanetti ABM e account management per seguire enti e sponsor.",
+    assumptionNote: "Compensi commerciali, cofanetti ABM e account management (usato per il CAC fully-loaded).",
   },
   costiDistribuzioneSeeding24m: {
     key: "costiDistribuzioneSeeding24m",
@@ -239,8 +319,7 @@ export const INPUT_META: Record<keyof SimulatorInputs, InputFieldMeta> = {
     min: 0,
     max: 150000,
     step: 2000,
-    assumptionNote: "Stampa segnalibri/totem QR, tag NFC, media kit personalizzati e micro-campagne di seeding. Il CAC diretto deriva dalla divisione di questa spesa per i lettori ottenuti.",
-    biasNote: "Sul sito €0,40 era presentato come parametro quasi costante anziché risultato dipendente da costi reali e viralità effettiva.",
+    assumptionNote: "Stampa QR/NFC, media kit personalizzati e seeding. Il CAC diretto si calcola dividendo questa spesa per i lettori effettivi.",
   },
   costiGaCdnGdpr24m: {
     key: "costiGaCdnGdpr24m",
@@ -249,18 +328,18 @@ export const INPUT_META: Record<keyof SimulatorInputs, InputFieldMeta> = {
     min: 0,
     max: 150000,
     step: 2000,
-    assumptionNote: "Banda video, hosting, DPO/GDPR compliance, contabilità e costi generali di funzionamento della startup.",
+    assumptionNote: "Hosting video/trailer, DPO/GDPR compliance, contabilità e struttura.",
   },
 
-  // S1 Fondazioni ed Enti
+  // S1 Fondazioni & Enti
   f1Contratti24m: {
     key: "f1Contratti24m",
-    label: "Contratti Tier F1 · Istituzionale Base (24M)",
+    label: "Contratti Tier F1 · Fondazioni / Comuni Base (24M)",
     unit: "n",
     min: 0,
     max: 40,
     step: 1,
-    assumptionNote: "Numero di fondazioni o enti acquirenti del pacchetto base (licenze digitali + ex-libris + kit scuole) in 24 mesi.",
+    assumptionNote: "Fondazioni bancarie, fondazioni d'impresa o Comuni che acquistano pacchetti di licenze per promuovere spettacoli, contest o progetti locali.",
   },
   f1PrezzoEur: {
     key: "f1PrezzoEur",
@@ -269,7 +348,7 @@ export const INPUT_META: Record<keyof SimulatorInputs, InputFieldMeta> = {
     min: 0,
     max: 35000,
     step: 500,
-    assumptionNote: "Prezzo editabile del pacchetto base (default €9.800 da listino sito).",
+    assumptionNote: "Prezzo del pacchetto base (default €9.800 da listino sito, libero anche per pacchetti comunali piccoli da €2.000–€5.000).",
   },
   f2Contratti24m: {
     key: "f2Contratti24m",
@@ -278,7 +357,7 @@ export const INPUT_META: Record<keyof SimulatorInputs, InputFieldMeta> = {
     min: 0,
     max: 25,
     step: 1,
-    assumptionNote: "Unioni di Comuni, DMO o Fondazioni territoriali che attivano reportage locali + itinerari geolocalizzati (3.3-B2G + 4.4).",
+    assumptionNote: "Comuni, Unioni di Comuni o DMO che attivano edizioni territoriali e itinerari geolocalizzati (3.3-B2G + 4.4).",
   },
   f2PrezzoEur: {
     key: "f2PrezzoEur",
@@ -287,7 +366,7 @@ export const INPUT_META: Record<keyof SimulatorInputs, InputFieldMeta> = {
     min: 0,
     max: 50000,
     step: 500,
-    assumptionNote: "Include produzione contenuti territoriali, audio-guide e integrazione QR su info-point/strutture.",
+    assumptionNote: "Include produzione reportage territoriali, audio-guide e QR su strutture/teatri comunali.",
   },
   f3Contratti24m: {
     key: "f3Contratti24m",
@@ -296,7 +375,7 @@ export const INPUT_META: Record<keyof SimulatorInputs, InputFieldMeta> = {
     min: 0,
     max: 15,
     step: 1,
-    assumptionNote: "Accordi quadro regionali multi-uscita con licenze estese e più itinerari integrati.",
+    assumptionNote: "Accordi quadro regionali o grandi Fondazioni con programma annuale multi-uscita.",
   },
   f3PrezzoEur: {
     key: "f3PrezzoEur",
@@ -305,81 +384,89 @@ export const INPUT_META: Record<keyof SimulatorInputs, InputFieldMeta> = {
     min: 0,
     max: 60000,
     step: 500,
-    assumptionNote: "Prezzo comprensivo di eventuale sconto programma annuale.",
+    assumptionNote: "Prezzo comprensivo di sconto programma annuale.",
   },
   fCogsPct: {
     key: "fCogsPct",
-    label: "COGS variabili erogazione B2B/B2G (% sui ricavi)",
+    label: "COGS variabili erogazione Fondazioni/Enti (%)",
     unit: "%",
     min: 0,
     max: 70,
     step: 1,
-    assumptionNote: "Costo marginale di personalizzazione ex-libris, adattamento schede didattiche, reportage locali e reportistica trimestrale.",
+    assumptionNote: "Costi variabili di personalizzazione ex-libris, contenuti territoriali e report d'impatto.",
   },
-  fDbEntiContattiTot: {
-    key: "fDbEntiContattiTot",
-    label: "Contatti totali raggiunti sui DB/Portali degli Enti",
+  fLicenzeMediePerEnte: {
+    key: "fLicenzeMediePerEnte",
+    label: "Licenze medie acquistate e distribuite per Ente/Comune",
     unit: "n",
     min: 0,
-    max: 500000,
-    step: 5000,
-    assumptionNote: "Iscritti a newsletter comunali/regionali, soci di fondazioni e portali cittadini a cui l'ente invia gratuitamente l'opera.",
+    max: 2000,
+    step: 50,
+    assumptionNote: "Es. un Comune acquista 100-500 licenze per distribuirle a cittadini, spettatori teatrali e scuole di danza locali promuovendo gli spettacoli comunali; una Fondazione fino a 1.000.",
+    biasNote: "Nella v1 i contatti degli enti erano un numero astratto attivo anche con 0 contratti; ora derivano dai contratti chiusi.",
   },
-  fDbRedemptionPct: {
-    key: "fDbRedemptionPct",
-    label: "Tasso di riscatto (download/apertura) su DB Enti",
+  fContattiCanaliLocaliPerEnte: {
+    key: "fContattiCanaliLocaliPerEnte",
+    label: "Contatti medi newsletter/cartellone del singolo Ente",
+    unit: "n",
+    min: 0,
+    max: 30000,
+    step: 500,
+    assumptionNote: "Cittadini e spettatori raggiunti tramite i canali del Comune/Fondazione quando l'ente promuove le copie/spettacoli acquistati.",
+  },
+  fRedemptionEntiPct: {
+    key: "fRedemptionEntiPct",
+    label: "Tasso attivazione effettiva tra licenze & canali Ente",
     unit: "%",
     min: 0,
-    max: 50,
+    max: 100,
     step: 1,
-    assumptionNote: "Percentuale di cittadini/utenti che apre effettivamente l'ebook dal link istituzionale (realistico PA/Fondazioni: 5%-12%).",
-    biasNote: "Il 27% del sito è un tasso più vicino all'open-rate email che al riscatto netto su DB freddi.",
+    assumptionNote: "Percentuale di cittadini/destinatari che riscatta e apre l'ebook tramite le copie o i link distribuiti dall'ente.",
   },
-  fDbLetturaProfondaPct: {
-    key: "fDbLetturaProfondaPct",
-    label: "Quota riscatti con lettura attiva (> 4 min)",
+  fLetturaProfondaEntiPct: {
+    key: "fLetturaProfondaEntiPct",
+    label: "Quota attivazioni Enti con lettura attiva (> 4 min)",
     unit: "%",
     min: 0,
     max: 100,
     step: 5,
-    assumptionNote: "Percentuale di chi apre il link istituzionale che completa almeno una sezione multimediale.",
+    assumptionNote: "Percentuale di chi apre l'ebook da canale comunale/fondazione che fruisce in profondità i contenuti.",
   },
-  fIstitutiAttivati: {
-    key: "fIstitutiAttivati",
-    label: "Istituti scolastici / accademie adottanti (4.2)",
+  fScuoleDanzaPerEnte: {
+    key: "fScuoleDanzaPerEnte",
+    label: "Scuole di Danza / Accademie sostenute per Ente contrattualizzato",
     unit: "n",
     min: 0,
-    max: 500,
-    step: 5,
-    assumptionNote: "Scuole superiori, licei coreutici (circa 50 in Italia) e istituti raggiunti tramite bandi o pacchetti F1/F3.",
-    biasNote: "Il target sito di 320 istituti presuppone un'ampia espansione oltre i soli licei coreutici.",
+    max: 30,
+    step: 0.5,
+    assumptionNote: "Scuole di danza e realtà coreutiche del territorio coinvolte da ciascun Comune o Fondazione che acquista il pacchetto (0 contratti = 0 scuole B2G).",
   },
-  fClassiPerIstituto: {
-    key: "fClassiPerIstituto",
-    label: "Classi medie coinvolte per istituto",
+  fClassiGruppiPerScuola: {
+    key: "fClassiGruppiPerScuola",
+    label: "Gruppi / corsi medi coinvolti per Scuola di Danza",
     unit: "n",
     min: 0,
     max: 15,
     step: 0.2,
-    assumptionNote: "Numero medio di classi che adottano il kit multimediale in ciascuna scuola aderente.",
+    assumptionNote: "Numero medio di classi/corsi che utilizzano i moduli multimediali in ciascuna scuola di danza sostenuta.",
   },
   fCompletamentoDidatticoPct: {
     key: "fCompletamentoDidatticoPct",
-    label: "Completamento moduli didattici in classe",
+    label: "Completamento moduli didattici (4.2)",
     unit: "%",
     min: 0,
     max: 100,
     step: 2,
-    assumptionNote: "Percentuale di classi che porta a termine il percorso PCTO o laboratorio assegnato.",
+    assumptionNote: "Percentuale di classi/gruppi che completa il percorso multimediale.",
   },
   fCapexEvitatoPerEnteEur: {
     key: "fCapexEvitatoPerEnteEur",
-    label: "Costo progetto culturale/didattico evitato per ente",
+    label: "Costo progetto culturale/editoriale evitato per Ente",
     unit: "€",
     min: 0,
     max: 100000,
     step: 2000,
-    assumptionNote: "Quanto spenderebbe l'ente per commissionare separatamente piattaforma, documentari e kit PCTO.",
+    assumptionNote: "Spesa evitata dall'ente rispetto a sviluppare internamente un portale o pubblicazione territoriale equivalente.",
   },
   tAccessiGratuitiTerritorio: {
     key: "tAccessiGratuitiTerritorio",
@@ -388,92 +475,108 @@ export const INPUT_META: Record<keyof SimulatorInputs, InputFieldMeta> = {
     min: 0,
     max: 200000,
     step: 2000,
-    assumptionNote: "Consultazioni gratuite di mappe e audio-guide nei borghi/info-point che non passano da checkout Startup: valore attribuito alle Istituzioni.",
-    biasNote: "Corregge il vecchio KPI generico 'Accessi per destinazione' separando il beneficio pubblico territoriale dal ricavo Startup.",
+    assumptionNote: "Fruizione gratuita di mappe/audio-guide nei borghi e info-point: genera giornate di presenza attribuite alle Istituzioni.",
+  },
+  tTurismoLetturaProfondaPct: {
+    key: "tTurismoLetturaProfondaPct",
+    label: "Quota accessi turistici con lettura attiva (> 4 min)",
+    unit: "%",
+    min: 0,
+    max: 100,
+    step: 5,
+    assumptionNote: "Percentuale dei visitatori gratuiti che fruisce in profondità l'itinerario (sostituisce la vecchia costante 25%).",
   },
   tEstensioneSoggiornoPct: {
     key: "tEstensioneSoggiornoPct",
-    label: "% visitatori che estende soggiorno/visita grazie all'opera",
+    label: "% visitatori che estende soggiorno grazie alla guida",
     unit: "%",
     min: 0,
     max: 50,
     step: 1,
-    assumptionNote: "Quota di fruitori gratuiti che aggiunge almeno una giornata o notte sul territorio per spettacoli o botteghe scoperte nella guida.",
+    assumptionNote: "Quota che aggiunge permanenza locale per assistere a spettacoli o visitare artigiani.",
   },
   tGiorniExtraMedi: {
     key: "tGiorniExtraMedi",
-    label: "Giornate di presenza media aggiunte per convertito",
+    label: "Giornate di presenza extra medie per convertito",
     unit: "gg",
     min: 0,
     max: 7,
     step: 0.1,
-    assumptionNote: "Durata media dell'estensione di permanenza locale (usata dagli osservatori turistici per stimare le giornate di presenza).",
+    assumptionNote: "Durata media dell'estensione di soggiorno sul territorio.",
   },
   tSpesaGiornalieraTerritorioEur: {
     key: "tSpesaGiornalieraTerritorioEur",
-    label: "Spesa media giornaliera sul territorio (per giornata presenza)",
+    label: "Spesa media giornaliera sul territorio",
     unit: "€",
     min: 0,
     max: 350,
     step: 5,
-    assumptionNote: "Spesa locale media per vitto, alloggio, artigianato e biglietteria culturale attribuita al territorio/istituzioni.",
+    assumptionNote: "Spesa locale media per alloggio, ristorazione, artigianato e cultura.",
   },
   tAccessiBookingStartup: {
     key: "tAccessiBookingStartup",
-    label: "Accessi da contenuti digitali Startup verso servizi prenotabili",
+    label: "Accessi da contenuti Startup verso servizi prenotabili (4.4)",
     unit: "n",
     min: 0,
     max: 200000,
     step: 1000,
-    assumptionNote: "Utenti che arrivano alle schede prenotazione (pernottamenti, visite esperienziali, servizi organizzati) grazie ai contenuti della Startup.",
+    assumptionNote: "Traffico indirizzato da itinerari, schede spettacolo o newsletter verso servizi ricettivi/esperienziali prenotabili.",
   },
   tConvBookingPct: {
     key: "tConvBookingPct",
-    label: "Tasso conversione in prenotazione effettiva (4.4)",
+    label: "Tasso conversione in prenotazione effettiva",
     unit: "%",
     min: 0,
     max: 50,
     step: 1,
-    assumptionNote: "Percentuale di accessi alle call-to-action di prenotazione che conclude l'acquisto/booking tracciato.",
+    assumptionNote: "Percentuale di utenti interessati che completa una prenotazione tracciata.",
   },
   tScontrinoMedioServizioEur: {
     key: "tScontrinoMedioServizioEur",
-    label: "Valore medio prenotazione / servizio turistico (GMV)",
+    label: "Scontrino medio prenotazione / servizio (GMV)",
     unit: "€",
     min: 0,
     max: 1000,
     step: 5,
-    assumptionNote: "Valore lordo della transazione (biglietto, esperienza artigiana, pacchetto ricettivo o servizio organizzato).",
+    assumptionNote: "Valore lordo medio della prenotazione ricettiva, esperienza o servizio.",
   },
   tCommissioneStartupPct: {
     key: "tCommissioneStartupPct",
-    label: "Commissione applicata dalla Startup (0% – 80%+)",
+    label: "Commissione Startup su servizi turistici (0% – 80%+)",
     unit: "%",
     min: 0,
     max: 100,
     step: 1,
-    assumptionNote: "Fee applicata dalla Startup alle imprese ricettive/operatori: es. 0% se non intermediato, 10%-18% su affiliate hotel/esperienze, fino all'80% su servizi organizzati direttamente dalla Startup.",
-    biasNote: "Totalmente assente nel sito originario, che regalava il valore commerciale delle prenotazioni senza attribuire commissioni alla Startup.",
+    assumptionNote: "Fee applicata alle imprese ricettive/operatori (es. 12%-18%) o fino all'80% per servizi organizzati dalla Startup.",
+  },
+  tCogsGestioneBookingPct: {
+    key: "tCogsGestioneBookingPct",
+    label: "Costo variabile gestione booking Startup (% su commissioni)",
+    unit: "%",
+    min: 0,
+    max: 60,
+    step: 2,
+    assumptionNote: "Assistenza prenotazioni, gateway e costi operativi sulle transazioni (sostituisce la costante 12%).",
   },
 
   // S2 Aziende e Brand
   aCultContratti24m: {
     key: "aCultContratti24m",
-    label: "Sponsorizzazioni Culturali Private (3.3-B2B)",
+    label: "Aziende Sponsor Culturali Private (3.3-B2B)",
     unit: "n",
     min: 0,
     max: 30,
     step: 1,
-    assumptionNote: "Numero di capitoli tematici sostenuti da brand affini (benessere, moda, lifestyle) in 24 mesi.",
+    assumptionNote: "Brand consumer/lifestyle che acquistano un pacchetto/capitolo tematico (può includere anche la sponsorizzazione dei trailer contest).",
   },
   aCultPrezzoEur: {
     key: "aCultPrezzoEur",
-    label: "Prezzo medio capitolo Cultural Sponsorship",
+    label: "Prezzo unitario Cultural Sponsorship",
     unit: "€",
     min: 0,
     max: 50000,
     step: 1000,
-    assumptionNote: "Ticket negoziato con il brand privato (listino sito €24.000, calibrabile liberamente su PMI o grandi gruppi).",
+    assumptionNote: "Ticket pacchetto sponsor (include distribuzione al CRM aziendale + pool Startup).",
   },
   aCogsCultPct: {
     key: "aCogsCultPct",
@@ -482,43 +585,16 @@ export const INPUT_META: Record<keyof SimulatorInputs, InputFieldMeta> = {
     min: 0,
     max: 70,
     step: 1,
-    assumptionNote: "Costi editoriali dedicati, reportage foto/audio e kit distribuzione CRM per il brand.",
-  },
-  aCultCrmContattiTot: {
-    key: "aCultCrmContattiTot",
-    label: "Contatti CRM aziendali raggiunti (totale sponsor)",
-    unit: "n",
-    min: 0,
-    max: 1000000,
-    step: 10000,
-    assumptionNote: "Dimensione cumulata dei database clienti/prospect a cui le aziende inviano l'ebook come omaggio culturale.",
-  },
-  aCultRedemptionPct: {
-    key: "aCultRedemptionPct",
-    label: "Redemption effettiva su CRM aziendale",
-    unit: "%",
-    min: 0,
-    max: 45,
-    step: 1,
-    assumptionNote: "Tasso reale di apertura/download da DEM brand (realistico B2C/B2B: 4%-9%).",
-  },
-  aCultLetturaProfondaPct: {
-    key: "aCultLetturaProfondaPct",
-    label: "Quota redemption brand con lettura attiva (> 4 min)",
-    unit: "%",
-    min: 0,
-    max: 100,
-    step: 5,
-    assumptionNote: "Percentuale di clienti del brand che fruisce in profondità il capitolo tematico.",
+    assumptionNote: "Costi redazionali e di attivazione campagne multi-database.",
   },
   aTechContratti24m: {
     key: "aTechContratti24m",
-    label: "Partner Tecnici & Filiera (4.5 Tech Showcase)",
+    label: "Aziende Filiera Tech & B2B (4.5 Tech Showcase)",
     unit: "n",
     min: 0,
     max: 30,
     step: 1,
-    assumptionNote: "Aziende di illuminotecnica, pavimenti tecnici, acustica, tessuti, fisioterapia sportiva coinvolte in 24 mesi.",
+    assumptionNote: "Partner tecnici (pavimentazioni, illuminotecnica, acustica, tessuti, fisioterapia sportiva) che vendono a teatri, compagnie e scuole.",
   },
   aTechTicketLordoEur: {
     key: "aTechTicketLordoEur",
@@ -527,7 +603,7 @@ export const INPUT_META: Record<keyof SimulatorInputs, InputFieldMeta> = {
     min: 0,
     max: 60000,
     step: 1000,
-    assumptionNote: "Valore nominale dell'accordo per singolo partner tecnico (cash + eventuale quota barter).",
+    assumptionNote: "Corrispettivo lordo (cash + eventuale quota barter).",
   },
   aTechBarterPct: {
     key: "aTechBarterPct",
@@ -536,8 +612,7 @@ export const INPUT_META: Record<keyof SimulatorInputs, InputFieldMeta> = {
     min: 0,
     max: 100,
     step: 5,
-    assumptionNote: "Quota in fornitura tecnica/riprese contabilizzata SOLO a riduzione del COGS tecnico (mai come ricavo cash).",
-    biasNote: "Sul sito il 30% barter entrava impropriamente nel totale ricavi non diluitivi (€1,52M).",
+    assumptionNote: "Fornitura tecnica contabilizzata solo a riduzione COGS tecnici (mai nei ricavi cash).",
   },
   aCogsTechLordoPct: {
     key: "aCogsTechLordoPct",
@@ -546,35 +621,162 @@ export const INPUT_META: Record<keyof SimulatorInputs, InputFieldMeta> = {
     min: 0,
     max: 80,
     step: 1,
-    assumptionNote: "Costo tecnico di produzione prima dell'eventuale compensazione da barter.",
+    assumptionNote: "Costo di produzione reportage tecnici prima della compensazione barter.",
   },
-  aLeadPerTechPartner: {
-    key: "aLeadPerTechPartner",
-    label: "Lead B2B generati per partner tecnico (24M)",
+  aSponsorTrailerAutonomi: {
+    key: "aSponsorTrailerAutonomi",
+    label: "Sponsorizzazioni Trailer Contest autonome (se extra licenza)",
     unit: "n",
     min: 0,
-    max: 200,
-    step: 2,
-    assumptionNote: "Richieste di contatto o scheda tecnica generate da teatri, scuole e professionisti verso il partner.",
+    max: 40,
+    step: 1,
+    assumptionNote: "Nota esplicita: normalmente la sponsorizzazione dei trailer contest rientra già nel costo di acquisto della licenza/pacchetto sponsor; usa questo campo (>0) solo per slot venduti a parte.",
+    biasNote: "Evita il doppio conteggio tra pacchetti sponsor e sponsorizzazione dei trailer contest.",
   },
-  aSqlRatePct: {
-    key: "aSqlRatePct",
-    label: "Tasso qualificazione commerciale lead (MQL → SQL)",
+  aPrezzoSponsorTrailerEur: {
+    key: "aPrezzoSponsorTrailerEur",
+    label: "Prezzo slot Sponsor Trailer Contest autonomo (default €0 se incluso)",
+    unit: "€",
+    min: 0,
+    max: 25000,
+    step: 500,
+    assumptionNote: "Impostato a €0 o usato solo per pacchetti autonomi oltre la licenza principale.",
+  },
+  aCrmProprioPerAzienda: {
+    key: "aCrmProprioPerAzienda",
+    label: "Contatti CRM propri conferiti per singola Azienda Sponsor",
+    unit: "n",
+    min: 0,
+    max: 100000,
+    step: 1000,
+    assumptionNote: "Es. 20.000 contatti per ciascuno dei 10 sponsor = 200.000 contatti propri totali usati per Retention/Loyalty/Crisis e condivisi nel pool Startup.",
+  },
+  aQuotaScambioCrossSponsorPct: {
+    key: "aQuotaScambioCrossSponsorPct",
+    label: "% Pool Cross-Sponsor orchestrato dalla Startup (attivo se ≥2 sponsor)",
     unit: "%",
     min: 0,
     max: 100,
     step: 5,
-    assumptionNote: "Percentuale di lead che si trasforma in reale opportunità commerciale qualificata per il partner.",
-    biasNote: "Corregge il 'CPL €18' ambiguo del sito calcolando il CPL effettivo sostenuto dallo sponsor e confrontandolo sui soli SQL reali.",
+    assumptionNote: "Grazie all'orchestrazione Startup, ciascun brand raggiunge contatti provenienti dalle basi degli altri sponsor del pool (trasferimento basi clienti).",
   },
-  aCplFieraComparabileEur: {
-    key: "aCplFieraComparabileEur",
-    label: "Costo equivalente per lead qualificato in fiera B2B",
+  aDbProprioStartupPerAzienda: {
+    key: "aDbProprioStartupPerAzienda",
+    label: "Contatti DB proprietario selezionati dalla Startup / Azienda",
+    unit: "n",
+    min: 0,
+    max: 100000,
+    step: 1000,
+    assumptionNote: "Database proprietario segmentato dalla Startup e spedito per conto di ciascuna Azienda Cliente (default 20.000 per azienda).",
+  },
+  aQuotaAudienceOperaEspostaPct: {
+    key: "aQuotaAudienceOperaEspostaPct",
+    label: "% Audience Opera & Trailer Contest esposta ai moduli Sponsor",
+    unit: "%",
+    min: 0,
+    max: 100,
+    step: 5,
+    assumptionNote: "Quota di lettori attivi dell'ebook + spettatori dei trailer contest che incontra i capitoli/trailer sponsorizzati.",
+  },
+  aRedemptionCrmProprioPct: {
+    key: "aRedemptionCrmProprioPct",
+    label: "Apertura/lettura su CRM proprio dello Sponsor",
+    unit: "%",
+    min: 0,
+    max: 50,
+    step: 1,
+    assumptionNote: "Tasso di risposta dei clienti già presenti nel CRM dell'azienda.",
+  },
+  aClickLoyaltyCrisisPct: {
+    key: "aClickLoyaltyCrisisPct",
+    label: "Click su popup strategico Brand (Loyalty / Crisis Management)",
+    unit: "%",
+    min: 0,
+    max: 100,
+    step: 2,
+    assumptionNote: "Clienti sul CRM proprio che cliccano contenuti critici su valori, qualità o gestione crisi.",
+  },
+  aConvRetentionLoyaltyPct: {
+    key: "aConvRetentionLoyaltyPct",
+    label: "Tasso retention / riattivazione clienti da Loyalty & Crisis",
+    unit: "%",
+    min: 0,
+    max: 50,
+    step: 1,
+    assumptionNote: "Quota di clienti ingaggiati che rinnova o evita l'abbandono grazie alla comunicazione d'autore.",
+  },
+  aQuotaClvSalvataRetentionPct: {
+    key: "aQuotaClvSalvataRetentionPct",
+    label: "% di CLV preservato per ciascun cliente fidelizzato/trattenuto",
+    unit: "%",
+    min: 0,
+    max: 100,
+    step: 5,
+    assumptionNote: "Quota del Customer Lifetime Value (€500 B2C / €2.500 B2B) salvaguardata dall'azione di Loyalty/Crisis.",
+  },
+  aAperturaNuoviContattiStartupPct: {
+    key: "aAperturaNuoviContattiStartupPct",
+    label: "Apertura/lettura su nuovi contatti (Cross-Sponsor + DB Startup)",
+    unit: "%",
+    min: 0,
+    max: 40,
+    step: 1,
+    assumptionNote: "Tasso di lettura su audience nuove raggiunte tramite il DB segmentato Startup e il pool cross-sponsor.",
+  },
+  aTassoLeadSuLettoriNuoviPct: {
+    key: "aTassoLeadSuLettoriNuoviPct",
+    label: "Conversione in Lead qualificati su audience nuove & opera",
+    unit: "%",
+    min: 0,
+    max: 25,
+    step: 0.5,
+    assumptionNote: "Quota di lettori nuovi (da Pool Cross-Sponsor, DB Startup, Opera & Trailer) che lascia un contatto/richiesta commerciale per l'azienda.",
+    biasNote: "Sostituisce i '22 lead da fiera' scollegati della v1: ora i lead derivano dall'audience reale totale.",
+  },
+  aTassoChiusuraVenditaB2cPct: {
+    key: "aTassoChiusuraVenditaB2cPct",
+    label: "Close rate Lead → Clienti B2C / Cultural Sponsor",
+    unit: "%",
+    min: 0,
+    max: 50,
+    step: 1,
+    assumptionNote: "Percentuale di lead generati ai brand consumer che diventa cliente pagante.",
+  },
+  aTassoChiusuraVenditaB2bPct: {
+    key: "aTassoChiusuraVenditaB2bPct",
+    label: "Close rate Lead → Clienti B2B Filiera Tech",
+    unit: "%",
+    min: 0,
+    max: 50,
+    step: 1,
+    assumptionNote: "Percentuale di lead B2B (teatri, compagnie, scuole di danza) convertita in contratto tecnico.",
+  },
+  aClvB2cEur: {
+    key: "aClvB2cEur",
+    label: "Customer Lifetime Value · Aziende B2C / Brand (default €500)",
+    unit: "€",
+    min: 50,
+    max: 10000,
+    step: 50,
+    assumptionNote: "Valore netto generato lungo il ciclo di vita da un cliente consumer acquisito o trattenuto (default €500).",
+  },
+  aClvB2bTechEur: {
+    key: "aClvB2bTechEur",
+    label: "Customer Lifetime Value · Aziende B2B Filiera Tech (default €2.500)",
+    unit: "€",
+    min: 200,
+    max: 50000,
+    step: 100,
+    assumptionNote: "Valore ciclo di vita di un cliente B2B (teatro, scuola di danza, studio) per fornitori tecnici (default €2.500).",
+  },
+  aCplComparabileMercatoEur: {
+    key: "aCplComparabileMercatoEur",
+    label: "Valore equivalente di mercato per Lead qualificato (benchmark)",
     unit: "€",
     min: 0,
-    max: 1000,
-    step: 10,
-    assumptionNote: "Benchmark alternativo dello sponsor per acquisire un contatto qualificato equivalente in fiere o campagne B2B.",
+    max: 500,
+    step: 5,
+    assumptionNote: "Costo alternativo per ottenere un lead qualificato equivalente su canali paid/fiere.",
   },
   aSurveyCompletionPct: {
     key: "aSurveyCompletionPct",
@@ -583,53 +785,25 @@ export const INPUT_META: Record<keyof SimulatorInputs, InputFieldMeta> = {
     min: 0,
     max: 100,
     step: 2,
-    assumptionNote: "Quota di lettori unici che completa il modulo Zero-Party Data (realistico: 18%-30%; sito: 58%).",
+    assumptionNote: "Percentuale di utenti unici attivi che compila i moduli Zero-Party Data.",
   },
   aGdprOptInPct: {
     key: "aGdprOptInPct",
-    label: "Consenso esplicito GDPR su rispondenti (Opt-in)",
+    label: "Consenso esplicito GDPR su rispondenti",
     unit: "%",
     min: 0,
     max: 100,
     step: 2,
-    assumptionNote: "Percentuale che lascia consenso segmentato e utilizzabile per insight e comunicazioni.",
+    assumptionNote: "Quota che autorizza l'uso segmentato delle preferenze dichiarate.",
   },
   aValoreRicercaEvitataBrandEur: {
     key: "aValoreRicercaEvitataBrandEur",
-    label: "Valore ricerca di mercato risparmiata per brand (4.6)",
+    label: "Valore ricerca di mercato risparmiata per Azienda (4.6)",
     unit: "€",
     min: 0,
     max: 50000,
     step: 500,
-    assumptionNote: "Costo che l'azienda eviterebbe rispetto a commissionare un panel/survey esterno sul pubblico culturale.",
-  },
-  aClickPopupImportantePct: {
-    key: "aClickPopupImportantePct",
-    label: "Click su popup strategico Brand (Loyalty / Crisis)",
-    unit: "%",
-    min: 0,
-    max: 100,
-    step: 1,
-    assumptionNote: "Quota di lettori esposti ai contenuti brand che clicca sul popup/scheda interattiva ('cosa ha fatto l'azienda / gestione crisi').",
-    biasNote: "Indicatore completamente mancante nel sito per le imprese private.",
-  },
-  aConvObiettivoBrandPct: {
-    key: "aConvObiettivoBrandPct",
-    label: "Conversione obiettivo Brand da interazione chiave",
-    unit: "%",
-    min: 0,
-    max: 100,
-    step: 1,
-    assumptionNote: "Quota di chi interagisce con il contenuto importante che raggiunge l'obiettivo aziendale (fedeltà, recupero fiducia, richiesta info).",
-  },
-  aValoreObiettivoBrandEur: {
-    key: "aValoreObiettivoBrandEur",
-    label: "Valore economico obiettivo unitario per l'Impresa",
-    unit: "€",
-    min: 0,
-    max: 50000,
-    step: 25,
-    assumptionNote: "Valore stimato dall'impresa per ciascuna conversione di brand loyalty, contenimento crisi o preferenza commerciale.",
+    assumptionNote: "Costo evitato rispetto a panel/ricerche esterne sul pubblico culturale.",
   },
 
   // S3 Istituzioni Culturali e Media
@@ -640,17 +814,17 @@ export const INPUT_META: Record<keyof SimulatorInputs, InputFieldMeta> = {
     min: 0,
     max: 20,
     step: 1,
-    assumptionNote: "Numero di produzioni monografiche realizzate in partnership a costo zero per l'istituzione.",
+    assumptionNote: "Numero di speciali monografici realizzati a costo zero per l'istituzione.",
   },
   iReachPropriaIstituzione: {
     key: "iReachPropriaIstituzione",
-    label: "Contatti propri dell'Istituzione (DB/abbonati ente)",
+    label: "Contatti propri dell'Istituzione (DB/abbonati ente · 0 CPM)",
     unit: "n",
     min: 0,
     max: 2000000,
     step: 10000,
-    assumptionNote: "Audience già posseduta dall'istituzione su cui NON si applica alcun CPM fittizio, ma che genera enormi benefici diretti e di autorevolezza per la Startup.",
-    biasNote: "Corregge il doppio errore del sito: toglie il CPM fittizio sul DB proprio dell'ente e valorizza il traffico portato dall'ente alla Startup.",
+    assumptionNote: "Audience dell'ente (0 CPM fittizio). Genera traffico qualificato verso gli imbuti reali e Autorevolezza (Halo Effect) per la Startup, senza doppio conteggio licenze.",
+    biasNote: "Eliminato il doppio conteggio della v1 sulle azioni monetizzate da DB Ente: le licenze sono già pagate a monte.",
   },
   iReachStartupIncrementale: {
     key: "iReachStartupIncrementale",
@@ -659,7 +833,7 @@ export const INPUT_META: Record<keyof SimulatorInputs, InputFieldMeta> = {
     min: 0,
     max: 1500000,
     step: 10000,
-    assumptionNote: "Audience nuova e non sovrapposta raggiunta dalla Startup fuori dal database dell'Istituzione; su questa si calcola il CPM culturale.",
+    assumptionNote: "Audience nuova e diversa da quella già posseduta dall'istituzione, valorizzata a CPM culturale (€90 default).",
   },
   iCostoProdEvitatoEnteEur: {
     key: "iCostoProdEvitatoEnteEur",
@@ -668,43 +842,43 @@ export const INPUT_META: Record<keyof SimulatorInputs, InputFieldMeta> = {
     min: 0,
     max: 100000,
     step: 1000,
-    assumptionNote: "Quanto costerebbe all'istituzione produrre internamente saggi, interviste, clip prove e archivio digitale.",
+    assumptionNote: "Risparmio reale per il festival rispetto a produrre esternamente contenuti editoriali e video equivalenti.",
   },
   iCostoDirettoStartupSpecialeEur: {
     key: "iCostoDirettoStartupSpecialeEur",
-    label: "Costo marginale sostenuto dalla Startup / speciale (3.4)",
+    label: "Costo marginale Startup per produrre lo speciale (3.4)",
     unit: "€",
     min: 0,
     max: 50000,
     step: 500,
-    assumptionNote: "Rende esplicito il costo sostenuto dalla Startup dietro la formula 'a costo zero per l'ente'.",
+    assumptionNote: "Spesa reale sostenuta dalla Startup per erogare il servizio gratuito all'istituzione.",
   },
-  iConvDbIstituzioneAzioniStartupPct: {
-    key: "iConvDbIstituzioneAzioniStartupPct",
-    label: "% contatti DB Istituzione → azioni monetizzabili Startup",
+  iQuotaDbVersoTurismoPct: {
+    key: "iQuotaDbVersoTurismoPct",
+    label: "% lettori DB Istituzione indirizzati a offerte Turismo 4.4",
     unit: "%",
     min: 0,
-    max: 30,
-    step: 0.5,
-    assumptionNote: "Quota di lettori provenienti dal database dell'Istituzione che compie azioni monetizzabili sull'ecosistema Startup (acquisti, pernottamenti, servizi, donazioni).",
-  },
-  iValoreMedioAzioneMonetizzataEur: {
-    key: "iValoreMedioAzioneMonetizzataEur",
-    label: "Margine/ricavo medio Startup per azione da DB Istituzione",
-    unit: "€",
-    min: 0,
-    max: 500,
+    max: 50,
     step: 1,
-    assumptionNote: "Ricavo netto medio incassato dalla Startup per ogni azione monetizzata generata dal traffico qualificato dell'ente.",
+    assumptionNote: "Quota di pubblico del festival che naviga verso prenotazioni/itinerari 4.4 (mostra il contributo al traffico senza duplicare i ricavi).",
+  },
+  iQuotaDbVersoContestPct: {
+    key: "iQuotaDbVersoContestPct",
+    label: "% lettori DB Istituzione che partecipa/vota ai Contest 3.2",
+    unit: "%",
+    min: 0,
+    max: 50,
+    step: 1,
+    assumptionNote: "Cross-fertilization di pubblico tra grandi festival e contest online.",
   },
   iMoltiplicatoreAutorevolezzaPct: {
     key: "iMoltiplicatoreAutorevolezzaPct",
-    label: "Spinta di Autorevolezza su nuove Istituzioni (Halo Effect)",
+    label: "Autorevolezza acquisita per coinvolgere altre Istituzioni (Halo %)",
     unit: "%",
     min: 0,
     max: 200,
     step: 5,
-    assumptionNote: "Beneficio NON monetizzabile strategico: l'endorsement di una grande Istituzione legittima la startup sconosciuta e moltiplica la capacità di coinvolgere altri enti.",
+    assumptionNote: "Beneficio NON monetizzabile strategico: legittimazione della startup emergente presso altri enti/festival.",
   },
   iContattiB2BOriginePerSpeciale: {
     key: "iContattiB2BOriginePerSpeciale",
@@ -713,16 +887,16 @@ export const INPUT_META: Record<keyof SimulatorInputs, InputFieldMeta> = {
     min: 0,
     max: 100,
     step: 1,
-    assumptionNote: "Direttori, sponsor e partner incontrati grazie alla collaborazione con il festival/teatro.",
+    assumptionNote: "Direttori e partner conosciuti tramite lo speciale.",
   },
   iConvPipelineIstituzioniPct: {
     key: "iConvPipelineIstituzioniPct",
-    label: "Tasso conversione pipeline in trattative/contratti",
+    label: "Conversione pipeline in proposte/contratti",
     unit: "%",
     min: 0,
     max: 100,
     step: 1,
-    assumptionNote: "Quota di contatti originati che evolve in proposta attiva (amplificata dall'autorevolezza istituzionale).",
+    assumptionNote: "Quota di contatti originati che si trasforma in trattativa attiva.",
   },
   iValoreMedioDealPipelineEur: {
     key: "iValoreMedioDealPipelineEur",
@@ -731,52 +905,71 @@ export const INPUT_META: Record<keyof SimulatorInputs, InputFieldMeta> = {
     min: 0,
     max: 80000,
     step: 1000,
-    assumptionNote: "Valore indicativo dei contratti B2B/B2G/WL originati (mostrato come origination separata per non duplicare i ricavi S1/S2/S5).",
+    assumptionNote: "Valore indicativo di origination (tracciato a parte per non sommarlo due volte ai ricavi S1/S2/S5).",
   },
   iAperturaContenutoPct: {
     key: "iAperturaContenutoPct",
-    label: "Tasso apertura contenuto multimediale su esposti (3.4)",
+    label: "Tasso apertura opera multimediale su esposti (3.4)",
     unit: "%",
     min: 0,
     max: 100,
     step: 1,
-    assumptionNote: "Quota complessiva di utenti raggiunti (DB ente + Startup) che apre effettivamente l'opera interattiva.",
+    assumptionNote: "Quota complessiva di utenti raggiunti che apre lo speciale.",
+  },
+  iLetturaProfondaSuAperturaPct: {
+    key: "iLetturaProfondaSuAperturaPct",
+    label: "Quota aperture con lettura attiva (> 4 min) — omogenea",
+    unit: "%",
+    min: 0,
+    max: 100,
+    step: 5,
+    assumptionNote: "Allinea la definizione di Lettore Attivo del canale festival a quella degli altri canali (risolve l'inflazione al 77% della v1).",
   },
   iClickEventoImportantePct: {
     key: "iClickEventoImportantePct",
-    label: "Click su evento importante (popup Loyalty / Crisis / Invito)",
+    label: "Click su popup critico (Loyalty / Crisis / Invito Conf. Stampa)",
     unit: "%",
     min: 0,
     max: 100,
     step: 1,
-    assumptionNote: "Quota di lettori che interagisce con l'elemento multimediale critico ('l'Istituzione ha fatto X / non ha fatto Y').",
+    assumptionNote: "Lettori che cliccano il contenuto strategico chiave ('cosa ha fatto / non ha fatto l'Istituzione').",
   },
-  iConvObiettivoIstituzionePct: {
-    key: "iConvObiettivoIstituzionePct",
-    label: "Conversione effettiva su obiettivo Istituzione",
+  iConvMicroObiettivoIstituzionePct: {
+    key: "iConvMicroObiettivoIstituzionePct",
+    label: "Conversione su micro-obiettivo abbonato/loyalty (%)",
     unit: "%",
     min: 0,
     max: 100,
     step: 0.5,
-    assumptionNote: "Percentuale di chi legge l'evento importante che compie l'azione attesa (es. partecipazione conferenza stampa, loyalty, contenimento crisi).",
+    assumptionNote: "Quota di chi clicca che conferma loyalty o rinnovo/iscrizione (basso valore unitario, alto volume).",
   },
-  iValoreObiettivoIstituzioneEur: {
-    key: "iValoreObiettivoIstituzioneEur",
-    label: "Valore economico unitario per obiettivo Istituzione",
+  iValoreMicroObiettivoIstituzioneEur: {
+    key: "iValoreMicroObiettivoIstituzioneEur",
+    label: "Valore unitario micro-obiettivo Istituzione (es. €30 loyalty)",
     unit: "€",
     min: 0,
-    max: 200000,
-    step: 50,
-    assumptionNote: "Valore per singola conversione obiettivo (es. €350 loyalty/abbonamento, o valore molto alto per investitore/mecenate).",
+    max: 500,
+    step: 5,
+    assumptionNote: "Valore realistico di un micro-obiettivo di massa (es. €25-€45), evitando la moltiplicazione di massa per €350 vista nella v1.",
+    biasNote: "Corregge l'esplosione a €351k della v1 separando micro-obiettivi di massa dai macro-obiettivi rari.",
   },
-  iValoreProgettoSpecialeFissoEur: {
-    key: "iValoreProgettoSpecialeFissoEur",
-    label: "Valore obiettivo discreto / progetto finanziato (es. Conf. Stampa)",
+  iMacroProgettiFinanziatiCount: {
+    key: "iMacroProgettiFinanziatiCount",
+    label: "Macro-obiettivi discreti raggiunti (es. progetti finanziati)",
+    unit: "n",
+    min: 0,
+    max: 20,
+    step: 1,
+    assumptionNote: "Numero discreto di grandi risultati (es. 1 progetto finanziato da privati dopo conferenza stampa).",
+  },
+  iValoreMacroProgettoEur: {
+    key: "iValoreMacroProgettoEur",
+    label: "Valore medio per singolo Macro-obiettivo (es. €100.000)",
     unit: "€",
     min: 0,
     max: 500000,
     step: 5000,
-    assumptionNote: "Input opzionale per casi binari o ad alta posta (es. €100.000 se l'invito virale a una conferenza stampa porta al finanziamento di un progetto privato).",
+    assumptionNote: "Valore del progetto finanziato o della crisi risolta per singola occorrenza.",
   },
   iCopieStampaEsposte: {
     key: "iCopieStampaEsposte",
@@ -785,7 +978,7 @@ export const INPUT_META: Record<keyof SimulatorInputs, InputFieldMeta> = {
     min: 0,
     max: 1000000,
     step: 10000,
-    assumptionNote: "Tiratura complessiva su quotidiani e riviste culturali partner.",
+    assumptionNote: "Tiratura complessiva degli allegati phygital su testate partner.",
   },
   iQrScanPct: {
     key: "iQrScanPct",
@@ -794,25 +987,25 @@ export const INPUT_META: Record<keyof SimulatorInputs, InputFieldMeta> = {
     min: 0,
     max: 25,
     step: 0.2,
-    assumptionNote: "Conversione realistica carta → QR sulla stampa italiana: 0,8%-2,5% (sul sito era 14%).",
+    assumptionNote: "Conversione carta → digitale (realistico stampa italiana: 0,8%-2,5%).",
   },
   iStampaLetturaProfondaPct: {
     key: "iStampaLetturaProfondaPct",
-    label: "Quota scan QR stampa che diventa lettore attivo",
+    label: "Quota scan QR stampa con lettura attiva (> 4 min)",
     unit: "%",
     min: 0,
     max: 100,
     step: 5,
-    assumptionNote: "Percentuale di chi inquadra il QR che completa la fruizione digitale.",
+    assumptionNote: "Percentuale di chi scansiona che legge in profondità l'opera.",
   },
   iCostoPonteStampaStartupEur: {
     key: "iCostoPonteStampaStartupEur",
-    label: "Costo Startup per progettazione inserti e ponte digitale (3.5)",
+    label: "Costo Startup ponte digitale e clip video stampa (3.5)",
     unit: "€",
     min: 0,
     max: 50000,
     step: 500,
-    assumptionNote: "Impaginazione phygital, QR dinamici e produzione clip video dedicate agli inserti.",
+    assumptionNote: "Spesa di produzione dei contenuti digitali collegati agli inserti cartacei.",
   },
   iCicliInchiesta: {
     key: "iCicliInchiesta",
@@ -821,7 +1014,7 @@ export const INPUT_META: Record<keyof SimulatorInputs, InputFieldMeta> = {
     min: 0,
     max: 12,
     step: 1,
-    assumptionNote: "Numero di dossier di advocacy pubblicati nei 24 mesi.",
+    assumptionNote: "Numero di dossier pubblici nei 24 mesi.",
   },
   iRipreseStampaPerCiclo: {
     key: "iRipreseStampaPerCiclo",
@@ -830,7 +1023,7 @@ export const INPUT_META: Record<keyof SimulatorInputs, InputFieldMeta> = {
     min: 0,
     max: 150,
     step: 1,
-    assumptionNote: "Articoli, lanci agenzia e citazioni generate (realistico emergente: 12-25; sito: 85).",
+    assumptionNote: "Articoli e servizi generati da ogni inchiesta.",
   },
   iRispostaIstituzionalePct: {
     key: "iRispostaIstituzionalePct",
@@ -839,91 +1032,244 @@ export const INPUT_META: Record<keyof SimulatorInputs, InputFieldMeta> = {
     min: 0,
     max: 100,
     step: 5,
-    assumptionNote: "Percentuale di decisori pubblici che invia presa di posizione ufficiale.",
+    assumptionNote: "Percentuale di istituzioni che fornisce presa di posizione ufficiale.",
   },
 
-  // S4 Community Danza & Ricerca 4.1
+  // S4 Contest Trailer, Vota Donando, Bandi & Archive
   cTappe24m: {
     key: "cTappe24m",
-    label: "Tappe territoriali contest 'Cronache' (3.2)",
+    label: "Edizioni / tappe di Contest Trailer nei 24 mesi (3.2)",
     unit: "n",
     min: 0,
     max: 30,
     step: 1,
-    assumptionNote: "Numero di concorsi locali con scuole, compagnie e giornalisti-giurati in 24 mesi.",
+    assumptionNote: "Tornei/concorsi online con trailer e giurie di giornalisti nei 24 mesi.",
   },
-  cVotiPerTappa: {
-    key: "cVotiPerTappa",
-    label: "Voti medi raccolti per tappa territoriale",
+  cCompagnieContest: {
+    key: "cCompagnieContest",
+    label: "Compagnie di Danza partecipanti ai Contest (tot. 24M)",
     unit: "n",
     min: 0,
-    max: 15000,
-    step: 250,
-    assumptionNote: "Partecipazione del pubblico mobilitato dalle scuole e compagnie locali.",
-  },
-  cTassoDonantiSuVotantiPct: {
-    key: "cTassoDonantiSuVotantiPct",
-    label: "% votanti che effettua la micro-donazione (3.2)",
-    unit: "%",
-    min: 0,
-    max: 100,
+    max: 300,
     step: 1,
-    assumptionNote: "Quota reale di votanti che dona per le borse di studio (realistico: 5%-15%; sul sito era implicitamente 100%).",
-    biasNote: "Separare i voti gratuiti dai donatori effettivi evita sovrastime di 8×-10× sul fondo borse.",
+    assumptionNote: "Compagnie professionali o emergenti che partecipano con un proprio trailer coreografico online.",
   },
-  cDonazioneMediaEur: {
-    key: "cDonazioneMediaEur",
-    label: "Importo medio micro-donazione per donante",
-    unit: "€",
+  cScuoleContest: {
+    key: "cScuoleContest",
+    label: "Scuole di Danza partecipanti ai Contest (tot. 24M)",
+    unit: "n",
     min: 0,
-    max: 50,
-    step: 0.5,
-    assumptionNote: "Ticket medio donato tramite 'dona con il voto' (es. €2–€5).",
+    max: 500,
+    step: 2,
+    assumptionNote: "Scuole di danza che iscrivono gruppi/coreografie con trailer dedicati nella piattaforma.",
   },
-  cFeeGestioneStartupPct: {
-    key: "cFeeGestioneStartupPct",
-    label: "Eventuale fee di gestione piattaforma Startup (0% - 20%+)",
-    unit: "%",
-    min: 0,
+  cStudentiPerCompagnia: {
+    key: "cStudentiPerCompagnia",
+    label: "Danzatori / componenti medi per Compagnia in gara",
+    unit: "n",
+    min: 1,
     max: 50,
     step: 1,
-    assumptionNote: "Impostabile a 0% per etica totale verso le borse di studio oppure >0% se la startup gestisce il servizio.",
+    assumptionNote: "Numero medio di danzatori che compongono il cast del trailer della compagnia (attivi negli inviti).",
   },
-  cCostoGatewayPct: {
-    key: "cCostoGatewayPct",
-    label: "Costi transazione pagamento (Stripe/gateway)",
-    unit: "%",
-    min: 0,
-    max: 10,
-    step: 0.5,
-    assumptionNote: "Commissione tecnica bancaria detratta dal lordo raccolto.",
+  cStudentiPerScuola: {
+    key: "cStudentiPerScuola",
+    label: "Studenti / allievi medi per Scuola di Danza in gara",
+    unit: "n",
+    min: 1,
+    max: 200,
+    step: 1,
+    assumptionNote: "Allievi partecipanti per singola scuola di danza.",
   },
-  cValoreBorsaEur: {
-    key: "cValoreBorsaEur",
-    label: "Importo unitario per singola borsa di studio",
+  cPrezzoIscrizioneCompagniaEur: {
+    key: "cPrezzoIscrizioneCompagniaEur",
+    label: "Prezzo iscrizione al Contest · Compagnia (€0 = gratis)",
     unit: "€",
-    min: 100,
-    max: 5000,
-    step: 100,
-    assumptionNote: "Valore di una borsa di studio assegnata agli allievi/scuole.",
+    min: 0,
+    max: 1000,
+    step: 10,
+    assumptionNote: "Quota d'iscrizione o pack trailer pagata da ogni compagnia partecipante (default €120).",
   },
-  cRitenzioneSerialePct: {
-    key: "cRitenzioneSerialePct",
-    label: "Ritenzione seriale tra episodi (3.2)",
+  cPrezzoIscrizioneScuolaEur: {
+    key: "cPrezzoIscrizioneScuolaEur",
+    label: "Prezzo iscrizione al Contest · Scuola di Danza (€0 = gratis)",
+    unit: "€",
+    min: 0,
+    max: 1000,
+    step: 10,
+    assumptionNote: "Quota d'iscrizione pagata da ogni scuola partecipante (default €120).",
+  },
+  cLicenzeMediePerPartecipante: {
+    key: "cLicenzeMediePerPartecipante",
+    label: "Licenze multimediali concorso acquistate per Scuola/Compagnia",
+    unit: "n",
+    min: 0,
+    max: 50,
+    step: 1,
+    assumptionNote: "Pacchetti multimediali del torneo (video integrali, schede, backstage, voting pass) acquistati da scuole, compagnie o famiglie.",
+  },
+  cPrezzoLicenzaConcorsoEur: {
+    key: "cPrezzoLicenzaConcorsoEur",
+    label: "Prezzo unitario Licenza Multimediale del Concorso",
+    unit: "€",
+    min: 0,
+    max: 250,
+    step: 5,
+    assumptionNote: "Prezzo per singola licenza digitale del concorso (default €35).",
+  },
+  cInvitiMediPerStudente: {
+    key: "cInvitiMediPerStudente",
+    label: "Amici/familiari invitati in media da ogni studente in gara",
+    unit: "n",
+    min: 0,
+    max: 40,
+    step: 1,
+    assumptionNote: "Ogni ballerino/studente invita amici, parenti e community a guardare e votare il trailer.",
+  },
+  cConvInvitiContestPct: {
+    key: "cConvInvitiContestPct",
+    label: "Tasso conversione inviti Contest → Spettatori/Votanti",
     unit: "%",
     min: 0,
     max: 100,
     step: 2,
-    assumptionNote: "Lettori della prima puntata che seguono almeno il 60% della stagione.",
+    assumptionNote: "Coefficiente virale del contest = Inviti × Conv% (es. 8 × 30% = 2,40 votanti/studente).",
   },
-  cCommunitySemiOrganici: {
-    key: "cCommunitySemiOrganici",
-    label: "Lettori primari organici da Community, Dark Social & Spoke",
-    unit: "n",
+  cSovrapposizioneContestPct: {
+    key: "cSovrapposizioneContestPct",
+    label: "Sovrapposizione spettatori tra più trailer dello stesso torneo",
+    unit: "%",
     min: 0,
-    max: 100000,
-    step: 500,
-    assumptionNote: "Base di lettori attivi iniziali provenienti da scuole partecipanti, gruppi WhatsApp/Telegram e clip social prima della viralità.",
+    max: 70,
+    step: 2,
+    assumptionNote: "Deduplicazione dei votanti/spettatori che seguono più scuole nella medesima tappa.",
+  },
+  cQuotaSpettatoriLettoriOperaPct: {
+    key: "cQuotaSpettatoriLettoriOperaPct",
+    label: "% spettatori Trailer Contest che legge anche l'Opera (> 4 min)",
+    unit: "%",
+    min: 0,
+    max: 100,
+    step: 5,
+    assumptionNote: "Quota di votanti del contest che prosegue leggendo capitoli editoriali, sostituendo i semi organici astratti della v1.",
+  },
+  cTassoDonantiSuVotantiPct: {
+    key: "cTassoDonantiSuVotantiPct",
+    label: "% votanti che effettua 'Vota Donando'",
+    unit: "%",
+    min: 0,
+    max: 100,
+    step: 1,
+    assumptionNote: "Quota di votanti che associa una micro-donazione al proprio voto (default 12%).",
+  },
+  cDonazioneMediaVotoEur: {
+    key: "cDonazioneMediaVotoEur",
+    label: "Donazione media per donante ('Vota Donando')",
+    unit: "€",
+    min: 0,
+    max: 50,
+    step: 0.5,
+    assumptionNote: "Importo medio versato da chi vota donando (default €4).",
+  },
+  cTassoSbloccaDonandoReaderPct: {
+    key: "cTassoSbloccaDonandoReaderPct",
+    label: "% lettori Opera che usa 'Sblocca Donando' (Director's Cut)",
+    unit: "%",
+    min: 0,
+    max: 25,
+    step: 0.5,
+    assumptionNote: "Alternativa ai 3 inviti sul Reader per sbloccare i contenuti extra donando.",
+  },
+  cImportoSbloccaDonandoEur: {
+    key: "cImportoSbloccaDonandoEur",
+    label: "Importo donazione sblocco Director's Cut (default €2)",
+    unit: "€",
+    min: 0,
+    max: 20,
+    step: 0.5,
+    assumptionNote: "Micro-donazione proposta nel modulo Director's Cut del sito (€2).",
+  },
+  cCostoGatewayPct: {
+    key: "cCostoGatewayPct",
+    label: "Costi transazione gateway pagamenti (%)",
+    unit: "%",
+    min: 0,
+    max: 10,
+    step: 0.5,
+    assumptionNote: "Commissioni Stripe/carte detratte dal lordo donato.",
+  },
+  cFeeGestioneStartupDonazioniPct: {
+    key: "cFeeGestioneStartupDonazioniPct",
+    label: "Fee di gestione Startup su Vota Donando (0% – 80%)",
+    unit: "%",
+    min: 0,
+    max: 80,
+    step: 1,
+    assumptionNote: "Quota trattenuta dalla Startup (default 0% per etica; il restante 100% viene ripartito tra gli stakeholder sotto).",
+  },
+  cQuotaDonazioniCommunityPct: {
+    key: "cQuotaDonazioniCommunityPct",
+    label: "% fondo donazioni attribuito a Community Danza (borse/scuole)",
+    unit: "%",
+    min: 0,
+    max: 100,
+    step: 5,
+    assumptionNote: "Quota destinata a borse di studio, scuole e compagnie (default 80%).",
+  },
+  cQuotaDonazioniFondazioniPct: {
+    key: "cQuotaDonazioniFondazioniPct",
+    label: "% fondo donazioni attribuito a Fondazioni / Progetti Territoriali",
+    unit: "%",
+    min: 0,
+    max: 100,
+    step: 5,
+    assumptionNote: "Quota destinata a co-finanziare progetti civici/locali di Fondazioni o Comuni (default 20%).",
+  },
+  cQuotaDonazioniAziendeEsgPct: {
+    key: "cQuotaDonazioniAziendeEsgPct",
+    label: "% fondo donazioni attribuito a cause ESG Aziende Sponsor",
+    unit: "%",
+    min: 0,
+    max: 100,
+    step: 5,
+    assumptionNote: "Quota associata a iniziative cause-marketing patrocinate da brand (default 0%, normalizzata sul 100% netto).",
+  },
+  cValoreBorsaEur: {
+    key: "cValoreBorsaEur",
+    label: "Valore unitario singola borsa di studio / premio",
+    unit: "€",
+    min: 100,
+    max: 5000,
+    step: 100,
+    assumptionNote: "Parametro per stimare il numero di borse equivalenti finanziate.",
+  },
+  cRitenzioneSerialePct: {
+    key: "cRitenzioneSerialePct",
+    label: "Ritenzione seriale tra tappe contest (3.2)",
+    unit: "%",
+    min: 0,
+    max: 100,
+    step: 2,
+    assumptionNote: "Percentuale di utenti che segue con continuità la stagione seriale.",
+  },
+  cCostoVariabilePerPartecipanteEur: {
+    key: "cCostoVariabilePerPartecipanteEur",
+    label: "Costo variabile Startup per Scuola/Compagnia in gara",
+    unit: "€",
+    min: 0,
+    max: 500,
+    step: 5,
+    assumptionNote: "Moderazione trailer, hosting video, supporto operativo e verifiche anti-frode voto per partecipante.",
+    biasNote: "Colma l'assenza dei costi variabili dei contest trailer nella v1.",
+  },
+  cCostoFissoPerTappaGiuriaEur: {
+    key: "cCostoFissoPerTappaGiuriaEur",
+    label: "Costo organizzativo e giuria giornalisti per tappa",
+    unit: "€",
+    min: 0,
+    max: 5000,
+    step: 100,
+    assumptionNote: "Coordinamento giurie giornalistiche e comunicazione per ciascuna edizione/tappa.",
   },
   cReturningMau: {
     key: "cReturningMau",
@@ -932,7 +1278,7 @@ export const INPUT_META: Record<keyof SimulatorInputs, InputFieldMeta> = {
     min: 0,
     max: 30000,
     step: 250,
-    assumptionNote: "Danzatori, coreografi e operatori che tornano mensilmente (nicchia Italia realistica: 1.500-3.500; sito: 9.500).",
+    assumptionNote: "Professionisti unici di ritorno ogni mese (nicchia Italia: 1.500-3.500).",
   },
   cVisiteAnnuePerMau: {
     key: "cVisiteAnnuePerMau",
@@ -941,7 +1287,7 @@ export const INPUT_META: Record<keyof SimulatorInputs, InputFieldMeta> = {
     min: 0,
     max: 24,
     step: 0.2,
-    assumptionNote: "Rende esplicito il denominatore mancante del sito tra MAU e candidature generate.",
+    assumptionNote: "Numero medio annuo di consultazioni bandi per utente attivo.",
   },
   cCtrCallPct: {
     key: "cCtrCallPct",
@@ -950,16 +1296,16 @@ export const INPUT_META: Record<keyof SimulatorInputs, InputFieldMeta> = {
     min: 0,
     max: 60,
     step: 1,
-    assumptionNote: "Quota di visite call che genera candidatura o click qualificato.",
+    assumptionNote: "Tasso di candidatura o click qualificato verso residenze e casting.",
   },
   cFeaturedCalls24m: {
     key: "cFeaturedCalls24m",
-    label: "Call / Audizioni sponsorizzate in evidenza (24M)",
+    label: "Call / Audizioni B2B in evidenza (24M)",
     unit: "n",
     min: 0,
     max: 200,
     step: 2,
-    assumptionNote: "Bandi di teatri/residenze pubblicati in modalità premium lato offerta (B2B), lasciando gratis l'accesso ai danzatori.",
+    assumptionNote: "Bandi pubblicati a pagamento da teatri e residenze (accesso gratuito ai danzatori).",
   },
   cFeaturedCallPrezzoEur: {
     key: "cFeaturedCallPrezzoEur",
@@ -968,16 +1314,16 @@ export const INPUT_META: Record<keyof SimulatorInputs, InputFieldMeta> = {
     min: 0,
     max: 2000,
     step: 50,
-    assumptionNote: "Fee per scheda video residenza, evidenza WhatsApp e raccolta portfolio.",
+    assumptionNote: "Fee per scheda video residenza ed evidenza WhatsApp.",
   },
-  cCostiCommunityOps24m: {
-    key: "cCostiCommunityOps24m",
-    label: "Costi operativi curatela bandi & contest (24M)",
+  cCostiCuratelaBandi24m: {
+    key: "cCostiCuratelaBandi24m",
+    label: "Costi operativi curatela bandi & community (24M)",
     unit: "€",
     min: 0,
     max: 120000,
     step: 2000,
-    assumptionNote: "Lavoro di moderazione, ricerca call e gestione tappe territoriali sui 24 mesi.",
+    assumptionNote: "Lavoro redazionale di selezione e verifica bandi/casting nei 24 mesi.",
   },
   cArchiveLicenzeY1: {
     key: "cArchiveLicenzeY1",
@@ -986,11 +1332,11 @@ export const INPUT_META: Record<keyof SimulatorInputs, InputFieldMeta> = {
     min: 0,
     max: 100,
     step: 1,
-    assumptionNote: "Buyer effettivi: Università, DAMS, Conservatori, Biblioteche e Associazioni (separati dalla Community gratuita).",
+    assumptionNote: "Atenei, DAMS, Conservatori e Biblioteche abbonate in Anno 1.",
   },
   cArchiveNuoveY2: {
     key: "cArchiveNuoveY2",
-    label: "Nuove licenze Living Archive acquisite in Anno 2",
+    label: "Nuove licenze Living Archive in Anno 2",
     unit: "n",
     min: 0,
     max: 150,
@@ -1004,7 +1350,7 @@ export const INPUT_META: Record<keyof SimulatorInputs, InputFieldMeta> = {
     min: 0,
     max: 100,
     step: 2,
-    assumptionNote: "Quota di licenze Anno 1 rinnovate in Anno 2.",
+    assumptionNote: "Quota licenze Anno 1 rinnovate in Anno 2.",
   },
   cArchivePrezzoAnnuoEur: {
     key: "cArchivePrezzoAnnuoEur",
@@ -1013,8 +1359,7 @@ export const INPUT_META: Record<keyof SimulatorInputs, InputFieldMeta> = {
     min: 0,
     max: 6000,
     step: 100,
-    assumptionNote: "Prezzo calibrabile per atenei/biblioteche italiane (realistico: €1.200-€1.800; sito: €3.000).",
-    biasNote: "Sul sito l'ARR veniva sommato a valori 24M; qui vengono mostrati separatamente Cumulato Cash 24M ed Exit ARR.",
+    assumptionNote: "Calibrabile sui reali budget biblioteche/atenei (€1.200–€1.800).",
   },
   cArchiveCogsPct: {
     key: "cArchiveCogsPct",
@@ -1023,7 +1368,7 @@ export const INPUT_META: Record<keyof SimulatorInputs, InputFieldMeta> = {
     min: 0,
     max: 50,
     step: 1,
-    assumptionNote: "Costo variabile di catalogazione trimestrale e supporto multi-utente.",
+    assumptionNote: "Costo variabile di catalogazione e manutenzione schede.",
   },
 
   // S5 Tecnologia & White-Label
@@ -1034,7 +1379,7 @@ export const INPUT_META: Record<keyof SimulatorInputs, InputFieldMeta> = {
     min: 0,
     max: 20,
     step: 1,
-    assumptionNote: "Progetti replicati in affidamento diretto per musei, fondazioni, rassegne su template modulare standard.",
+    assumptionNote: "Edizioni replicate per musei e fondazioni in affidamento diretto.",
   },
   tPrezzoSottosogliaEur: {
     key: "tPrezzoSottosogliaEur",
@@ -1043,7 +1388,7 @@ export const INPUT_META: Record<keyof SimulatorInputs, InputFieldMeta> = {
     min: 0,
     max: 60000,
     step: 1000,
-    assumptionNote: "Riconcilia il valore implicito €22.500 del sito con una fascia entry accessibile a musei/teatri.",
+    assumptionNote: "Fascia entry su template modulare.",
   },
   tCommesseEnterprise24m: {
     key: "tCommesseEnterprise24m",
@@ -1052,7 +1397,7 @@ export const INPUT_META: Record<keyof SimulatorInputs, InputFieldMeta> = {
     min: 0,
     max: 15,
     step: 1,
-    assumptionNote: "Edizioni complete a 13 moduli con design custom e motore dati proprietario.",
+    assumptionNote: "Edizioni complete a 13 moduli e design dedicato.",
   },
   tPrezzoEnterpriseEur: {
     key: "tPrezzoEnterpriseEur",
@@ -1061,25 +1406,34 @@ export const INPUT_META: Record<keyof SimulatorInputs, InputFieldMeta> = {
     min: 0,
     max: 120000,
     step: 1000,
-    assumptionNote: "Prezzo listino 'da €45.000' completamente editabile.",
+    assumptionNote: "Listino enterprise editabile (default €45.000).",
+  },
+  tRinnovoSaasY2Pct: {
+    key: "tRinnovoSaasY2Pct",
+    label: "% commesse Y1 che attiva canone SaaS annuale in Y2",
+    unit: "%",
+    min: 0,
+    max: 100,
+    step: 5,
+    assumptionNote: "Lega logicamente il canone SaaS alle commesse effettivamente consegnate in Anno 1 (evita canoni con 0 commesse).",
   },
   tCanoneSaasAnnuoEur: {
     key: "tCanoneSaasAnnuoEur",
-    label: "Canone annuo SaaS / Analytics / Hosting (Anno 2)",
+    label: "Canone annuo SaaS / Analytics / Hosting",
     unit: "€",
     min: 0,
     max: 15000,
     step: 300,
-    assumptionNote: "Ricavo ricorrente sulle piattaforme consegnate nell'anno precedente.",
+    assumptionNote: "Manutenzione, hosting e dashboard Zero-Party Data dal secondo anno.",
   },
-  tCommesseY1AttiveSaas: {
-    key: "tCommesseY1AttiveSaas",
-    label: "Piattaforme consegnate in Y1 che pagano canone in Y2",
-    unit: "n",
+  tCogsSaasPct: {
+    key: "tCogsSaasPct",
+    label: "COGS hosting & supporto SaaS (% su canone)",
+    unit: "%",
     min: 0,
-    max: 15,
+    max: 50,
     step: 1,
-    assumptionNote: "Base installata che genera canone ricorrente dal secondo anno.",
+    assumptionNote: "Costo infrastruttura cloud e assistenza tecnica (sostituisce la costante 15%).",
   },
   tCostoMarginaleProduzionePct: {
     key: "tCostoMarginaleProduzionePct",
@@ -1088,7 +1442,7 @@ export const INPUT_META: Record<keyof SimulatorInputs, InputFieldMeta> = {
     min: 10,
     max: 85,
     step: 1,
-    assumptionNote: "Costo reale di configurazione e personalizzazione (45% implica 55% margine netto di progetto vs 62% lordo del sito).",
+    assumptionNote: "Costo reale personalizzazione inclusivo di PM e Account.",
   },
   tQuotaLeadPlgBadgePct: {
     key: "tQuotaLeadPlgBadgePct",
@@ -1097,17 +1451,16 @@ export const INPUT_META: Record<keyof SimulatorInputs, InputFieldMeta> = {
     min: 0,
     max: 100,
     step: 5,
-    assumptionNote: "Effetto Product-Led Growth (5.6) sulle richieste inbound da altri musei/istituzioni.",
+    assumptionNote: "Quota di nuove richieste inbound generate dal footer tecnologico (5.6).",
   },
   tCapexAlternativoClienteEur: {
     key: "tCapexAlternativoClienteEur",
-    label: "Costo alternativo sviluppo CMS/agenzia evitato dal cliente",
+    label: "Costo alternativo sviluppo agenzia/CMS evitato dal cliente",
     unit: "€",
     min: 0,
     max: 180000,
     step: 2500,
-    assumptionNote: "Benchmark realistico di mercato per un'alternativa agency/CMS (€35k-€50k) su cui misurare il risparmio reale del committente.",
-    biasNote: "Evita benchmark gonfiati da €95k+ non coerenti con i budget medi dei musei italiani.",
+    assumptionNote: "Benchmark realistico mercato italiano (€35k–€50k).",
   },
   tSettimaneConsegna: {
     key: "tSettimaneConsegna",
@@ -1116,31 +1469,36 @@ export const INPUT_META: Record<keyof SimulatorInputs, InputFieldMeta> = {
     min: 2,
     max: 24,
     step: 1,
-    assumptionNote: "Tempo dal brief alla messa online grazie al template già testato.",
+    assumptionNote: "Tempi medi di pubblicazione dal brief.",
   },
   tSettimaneCustomExNovo: {
     key: "tSettimaneCustomExNovo",
-    label: "Time-to-market sviluppo custom ex novo (settimane)",
+    label: "Time-to-market sviluppo ex novo (settimane)",
     unit: "sett",
     min: 8,
     max: 52,
     step: 2,
-    assumptionNote: "Tempo stimato per sviluppare la stessa infrastruttura da zero.",
+    assumptionNote: "Tempi stimati con sviluppo software tradizionale da zero.",
   },
 };
 
 export const PRESETS: Record<PresetId, { label: string; badge: string; description: string; inputs: SimulatorInputs }> = {
   realistico: {
-    label: "Default Revisionato (Italia)",
+    label: "Default Revisionato v2 (Italia)",
     badge: "Consigliato",
-    description: "Tutti i bias corretti: CPM €90 su sola reach incrementale Startup, commissioni turismo 15% (0%-80% editabili), K = 0,25 con smorzamento, costi completi e DSO 90gg.",
+    description:
+      "Integra Contest Trailer (Compagnie+Scuole×Studenti), Vota Donando (80% Community / 20% Fondazioni / 0% fee), 3 Basi Aziende + CLV (€500 B2C / €2.500 B2B), DSO duale e zero doppi conteggi.",
     inputs: {
       sovrapposizioneCanaliPct: 20,
-      kViralita: 0.25,
+      kViralitaOpera: 0.25,
       decadimentoViralePct: 50,
       cpmCulturaleEur: 90,
+      dedupUtentiSuSessioniPct: 85,
       quotaRicaviAnno1Pct: 32,
+      quotaCapexAnno1Pct: 75,
+      quotaOpexFissiAnno1Pct: 48,
       dsoGiorniIncassoB2G: 90,
+      dsoGiorniIncassoB2B: 45,
       capexPiattaforma24m: 65000,
       costiFissiRedazione24m: 130000,
       costiSalesAbm24m: 78000,
@@ -1154,14 +1512,16 @@ export const PRESETS: Record<PresetId, { label: string; badge: string; descripti
       f3Contratti24m: 2,
       f3PrezzoEur: 18400,
       fCogsPct: 25,
-      fDbEntiContattiTot: 75000,
-      fDbRedemptionPct: 8,
-      fDbLetturaProfondaPct: 45,
-      fIstitutiAttivati: 110,
-      fClassiPerIstituto: 3.2,
+      fLicenzeMediePerEnte: 450,
+      fContattiCanaliLocaliPerEnte: 3500,
+      fRedemptionEntiPct: 12,
+      fLetturaProfondaEntiPct: 45,
+      fScuoleDanzaPerEnte: 4.5,
+      fClassiGruppiPerScuola: 3.2,
       fCompletamentoDidatticoPct: 58,
       fCapexEvitatoPerEnteEur: 28000,
       tAccessiGratuitiTerritorio: 24000,
+      tTurismoLetturaProfondaPct: 25,
       tEstensioneSoggiornoPct: 12,
       tGiorniExtraMedi: 1.4,
       tSpesaGiornalieraTerritorioEur: 85,
@@ -1169,43 +1529,54 @@ export const PRESETS: Record<PresetId, { label: string; badge: string; descripti
       tConvBookingPct: 10,
       tScontrinoMedioServizioEur: 95,
       tCommissioneStartupPct: 15,
+      tCogsGestioneBookingPct: 12,
 
       aCultContratti24m: 5,
       aCultPrezzoEur: 18000,
       aCogsCultPct: 30,
-      aCultCrmContattiTot: 110000,
-      aCultRedemptionPct: 6,
-      aCultLetturaProfondaPct: 42,
       aTechContratti24m: 5,
       aTechTicketLordoEur: 15000,
       aTechBarterPct: 20,
       aCogsTechLordoPct: 38,
-      aLeadPerTechPartner: 22,
-      aSqlRatePct: 30,
-      aCplFieraComparabileEur: 180,
+      aSponsorTrailerAutonomi: 0,
+      aPrezzoSponsorTrailerEur: 0,
+      aCrmProprioPerAzienda: 20000,
+      aQuotaScambioCrossSponsorPct: 40,
+      aDbProprioStartupPerAzienda: 20000,
+      aQuotaAudienceOperaEspostaPct: 35,
+      aRedemptionCrmProprioPct: 6,
+      aClickLoyaltyCrisisPct: 25,
+      aConvRetentionLoyaltyPct: 10,
+      aQuotaClvSalvataRetentionPct: 35,
+      aAperturaNuoviContattiStartupPct: 8,
+      aTassoLeadSuLettoriNuoviPct: 3.0,
+      aTassoChiusuraVenditaB2cPct: 12,
+      aTassoChiusuraVenditaB2bPct: 14,
+      aClvB2cEur: 500,
+      aClvB2bTechEur: 2500,
+      aCplComparabileMercatoEur: 90,
       aSurveyCompletionPct: 24,
       aGdprOptInPct: 32,
       aValoreRicercaEvitataBrandEur: 6000,
-      aClickPopupImportantePct: 25,
-      aConvObiettivoBrandPct: 10,
-      aValoreObiettivoBrandEur: 150,
 
       iSpeciali24m: 3,
       iReachPropriaIstituzione: 240000,
       iReachStartupIncrementale: 80000,
       iCostoProdEvitatoEnteEur: 18000,
       iCostoDirettoStartupSpecialeEur: 4800,
-      iConvDbIstituzioneAzioniStartupPct: 2.5,
-      iValoreMedioAzioneMonetizzataEur: 14,
+      iQuotaDbVersoTurismoPct: 4,
+      iQuotaDbVersoContestPct: 6,
       iMoltiplicatoreAutorevolezzaPct: 40,
       iContattiB2BOriginePerSpeciale: 10,
       iConvPipelineIstituzioniPct: 25,
       iValoreMedioDealPipelineEur: 14000,
       iAperturaContenutoPct: 22,
+      iLetturaProfondaSuAperturaPct: 35,
       iClickEventoImportantePct: 25,
-      iConvObiettivoIstituzionePct: 6,
-      iValoreObiettivoIstituzioneEur: 350,
-      iValoreProgettoSpecialeFissoEur: 0,
+      iConvMicroObiettivoIstituzionePct: 8,
+      iValoreMicroObiettivoIstituzioneEur: 30,
+      iMacroProgettiFinanziatiCount: 0,
+      iValoreMacroProgettoEur: 100000,
       iCopieStampaEsposte: 120000,
       iQrScanPct: 2.0,
       iStampaLetturaProfondaPct: 50,
@@ -1215,20 +1586,37 @@ export const PRESETS: Record<PresetId, { label: string; badge: string; descripti
       iRispostaIstituzionalePct: 30,
 
       cTappe24m: 8,
-      cVotiPerTappa: 2500,
-      cTassoDonantiSuVotantiPct: 10,
-      cDonazioneMediaEur: 3,
-      cFeeGestioneStartupPct: 0,
+      cCompagnieContest: 25,
+      cScuoleContest: 60,
+      cStudentiPerCompagnia: 12,
+      cStudentiPerScuola: 35,
+      cPrezzoIscrizioneCompagniaEur: 120,
+      cPrezzoIscrizioneScuolaEur: 120,
+      cLicenzeMediePerPartecipante: 6,
+      cPrezzoLicenzaConcorsoEur: 35,
+      cInvitiMediPerStudente: 8,
+      cConvInvitiContestPct: 30,
+      cSovrapposizioneContestPct: 20,
+      cQuotaSpettatoriLettoriOperaPct: 45,
+      cTassoDonantiSuVotantiPct: 12,
+      cDonazioneMediaVotoEur: 4,
+      cTassoSbloccaDonandoReaderPct: 2.5,
+      cImportoSbloccaDonandoEur: 2,
       cCostoGatewayPct: 2.5,
+      cFeeGestioneStartupDonazioniPct: 0,
+      cQuotaDonazioniCommunityPct: 80,
+      cQuotaDonazioniFondazioniPct: 20,
+      cQuotaDonazioniAziendeEsgPct: 0,
       cValoreBorsaEur: 1000,
       cRitenzioneSerialePct: 55,
-      cCommunitySemiOrganici: 9000,
+      cCostoVariabilePerPartecipanteEur: 65,
+      cCostoFissoPerTappaGiuriaEur: 600,
       cReturningMau: 2800,
       cVisiteAnnuePerMau: 2.4,
       cCtrCallPct: 15,
       cFeaturedCalls24m: 24,
       cFeaturedCallPrezzoEur: 300,
-      cCostiCommunityOps24m: 28000,
+      cCostiCuratelaBandi24m: 18000,
       cArchiveLicenzeY1: 10,
       cArchiveNuoveY2: 14,
       cArchiveRinnovoPct: 80,
@@ -1239,8 +1627,9 @@ export const PRESETS: Record<PresetId, { label: string; badge: string; descripti
       tPrezzoSottosogliaEur: 24000,
       tCommesseEnterprise24m: 1,
       tPrezzoEnterpriseEur: 45000,
+      tRinnovoSaasY2Pct: 100,
       tCanoneSaasAnnuoEur: 3600,
-      tCommesseY1AttiveSaas: 1,
+      tCogsSaasPct: 15,
       tCostoMarginaleProduzionePct: 45,
       tQuotaLeadPlgBadgePct: 25,
       tCapexAlternativoClienteEur: 40000,
@@ -1251,14 +1640,19 @@ export const PRESETS: Record<PresetId, { label: string; badge: string; descripti
   sitoOriginario: {
     label: "Sito Originario (Pre-Audit)",
     badge: "Con Bias",
-    description: "Replica i parametri dichiarati sul sito (K=1,35, 27% redemption, 14% QR, 30% barter su €360k, 80×€3k archive, €0 commissioni turismo, nessun DSO) per confronto diretto.",
+    description:
+      "Mappa i parametri pubblicati sul sito (K=1,35, 14% QR, 30% barter su €360k, 80×€3k archive, €0 commissioni turismo, 0 contest a pagamento) per confronto diretto.",
     inputs: {
       sovrapposizioneCanaliPct: 15,
-      kViralita: 1.35,
+      kViralitaOpera: 1.35,
       decadimentoViralePct: 45,
       cpmCulturaleEur: 1200,
+      dedupUtentiSuSessioniPct: 87.5,
       quotaRicaviAnno1Pct: 35,
+      quotaCapexAnno1Pct: 75,
+      quotaOpexFissiAnno1Pct: 48,
       dsoGiorniIncassoB2G: 0,
+      dsoGiorniIncassoB2B: 0,
       capexPiattaforma24m: 72000,
       costiFissiRedazione24m: 144000,
       costiSalesAbm24m: 86000,
@@ -1272,14 +1666,16 @@ export const PRESETS: Record<PresetId, { label: string; badge: string; descripti
       f3Contratti24m: 6,
       f3PrezzoEur: 20000,
       fCogsPct: 24,
-      fDbEntiContattiTot: 180000,
-      fDbRedemptionPct: 27,
-      fDbLetturaProfondaPct: 50,
-      fIstitutiAttivati: 320,
-      fClassiPerIstituto: 3.44,
+      fLicenzeMediePerEnte: 750,
+      fContattiCanaliLocaliPerEnte: 3750,
+      fRedemptionEntiPct: 27,
+      fLetturaProfondaEntiPct: 50,
+      fScuoleDanzaPerEnte: 8.0,
+      fClassiGruppiPerScuola: 3.44,
       fCompletamentoDidatticoPct: 72,
       fCapexEvitatoPerEnteEur: 40000,
       tAccessiGratuitiTerritorio: 48000,
+      tTurismoLetturaProfondaPct: 30,
       tEstensioneSoggiornoPct: 22,
       tGiorniExtraMedi: 1.0,
       tSpesaGiornalieraTerritorioEur: 32,
@@ -1287,43 +1683,54 @@ export const PRESETS: Record<PresetId, { label: string; badge: string; descripti
       tConvBookingPct: 22,
       tScontrinoMedioServizioEur: 32,
       tCommissioneStartupPct: 0,
+      tCogsGestioneBookingPct: 12,
 
       aCultContratti24m: 10,
       aCultPrezzoEur: 24000,
       aCogsCultPct: 28,
-      aCultCrmContattiTot: 160000,
-      aCultRedemptionPct: 27,
-      aCultLetturaProfondaPct: 55,
       aTechContratti24m: 12,
       aTechTicketLordoEur: 30000,
       aTechBarterPct: 30,
       aCogsTechLordoPct: 35,
-      aLeadPerTechPartner: 53,
-      aSqlRatePct: 40,
-      aCplFieraComparabileEur: 250,
+      aSponsorTrailerAutonomi: 0,
+      aPrezzoSponsorTrailerEur: 0,
+      aCrmProprioPerAzienda: 16000,
+      aQuotaScambioCrossSponsorPct: 0,
+      aDbProprioStartupPerAzienda: 0,
+      aQuotaAudienceOperaEspostaPct: 20,
+      aRedemptionCrmProprioPct: 27,
+      aClickLoyaltyCrisisPct: 0,
+      aConvRetentionLoyaltyPct: 0,
+      aQuotaClvSalvataRetentionPct: 0,
+      aAperturaNuoviContattiStartupPct: 0,
+      aTassoLeadSuLettoriNuoviPct: 1.8,
+      aTassoChiusuraVenditaB2cPct: 0,
+      aTassoChiusuraVenditaB2bPct: 15,
+      aClvB2cEur: 500,
+      aClvB2bTechEur: 2500,
+      aCplComparabileMercatoEur: 250,
       aSurveyCompletionPct: 58,
       aGdprOptInPct: 46,
       aValoreRicercaEvitataBrandEur: 10000,
-      aClickPopupImportantePct: 0,
-      aConvObiettivoBrandPct: 0,
-      aValoreObiettivoBrandEur: 0,
 
       iSpeciali24m: 2,
       iReachPropriaIstituzione: 700000,
       iReachStartupIncrementale: 0,
       iCostoProdEvitatoEnteEur: 35000,
       iCostoDirettoStartupSpecialeEur: 5000,
-      iConvDbIstituzioneAzioniStartupPct: 0,
-      iValoreMedioAzioneMonetizzataEur: 0,
+      iQuotaDbVersoTurismoPct: 0,
+      iQuotaDbVersoContestPct: 0,
       iMoltiplicatoreAutorevolezzaPct: 50,
       iContattiB2BOriginePerSpeciale: 22,
       iConvPipelineIstituzioniPct: 27,
       iValoreMedioDealPipelineEur: 15000,
       iAperturaContenutoPct: 18,
+      iLetturaProfondaSuAperturaPct: 45,
       iClickEventoImportantePct: 0,
-      iConvObiettivoIstituzionePct: 0,
-      iValoreObiettivoIstituzioneEur: 0,
-      iValoreProgettoSpecialeFissoEur: 0,
+      iConvMicroObiettivoIstituzionePct: 0,
+      iValoreMicroObiettivoIstituzioneEur: 0,
+      iMacroProgettiFinanziatiCount: 0,
+      iValoreMacroProgettoEur: 0,
       iCopieStampaEsposte: 180000,
       iQrScanPct: 14,
       iStampaLetturaProfondaPct: 55,
@@ -1333,20 +1740,37 @@ export const PRESETS: Record<PresetId, { label: string; badge: string; descripti
       iRispostaIstituzionalePct: 60,
 
       cTappe24m: 12,
-      cVotiPerTappa: 4000,
+      cCompagnieContest: 30,
+      cScuoleContest: 90,
+      cStudentiPerCompagnia: 14,
+      cStudentiPerScuola: 40,
+      cPrezzoIscrizioneCompagniaEur: 0,
+      cPrezzoIscrizioneScuolaEur: 0,
+      cLicenzeMediePerPartecipante: 0,
+      cPrezzoLicenzaConcorsoEur: 0,
+      cInvitiMediPerStudente: 15,
+      cConvInvitiContestPct: 80,
+      cSovrapposizioneContestPct: 15,
+      cQuotaSpettatoriLettoriOperaPct: 30,
       cTassoDonantiSuVotantiPct: 100,
-      cDonazioneMediaEur: 1,
-      cFeeGestioneStartupPct: 0,
+      cDonazioneMediaVotoEur: 1,
+      cTassoSbloccaDonandoReaderPct: 0,
+      cImportoSbloccaDonandoEur: 2,
       cCostoGatewayPct: 0,
+      cFeeGestioneStartupDonazioniPct: 0,
+      cQuotaDonazioniCommunityPct: 100,
+      cQuotaDonazioniFondazioniPct: 0,
+      cQuotaDonazioniAziendeEsgPct: 0,
       cValoreBorsaEur: 1000,
       cRitenzioneSerialePct: 64,
-      cCommunitySemiOrganici: 12000,
+      cCostoVariabilePerPartecipanteEur: 0,
+      cCostoFissoPerTappaGiuriaEur: 1500,
       cReturningMau: 9500,
       cVisiteAnnuePerMau: 3.6,
       cCtrCallPct: 18,
       cFeaturedCalls24m: 0,
       cFeaturedCallPrezzoEur: 0,
-      cCostiCommunityOps24m: 36000,
+      cCostiCuratelaBandi24m: 18000,
       cArchiveLicenzeY1: 20,
       cArchiveNuoveY2: 63,
       cArchiveRinnovoPct: 85,
@@ -1357,8 +1781,9 @@ export const PRESETS: Record<PresetId, { label: string; badge: string; descripti
       tPrezzoSottosogliaEur: 22500,
       tCommesseEnterprise24m: 0,
       tPrezzoEnterpriseEur: 45000,
+      tRinnovoSaasY2Pct: 0,
       tCanoneSaasAnnuoEur: 0,
-      tCommesseY1AttiveSaas: 0,
+      tCogsSaasPct: 15,
       tCostoMarginaleProduzionePct: 38,
       tQuotaLeadPlgBadgePct: 40,
       tCapexAlternativoClienteEur: 95000,
@@ -1367,16 +1792,21 @@ export const PRESETS: Record<PresetId, { label: string; badge: string; descripti
     },
   },
   esigenzaAltaPosta: {
-    label: "Caso Specifico · Conf. Stampa & Servizi 80%",
+    label: "Caso Specifico · Conf. Stampa, 10 Sponsor Pool & 80%",
     badge: "Esempio Custom",
-    description: "Esempio concreto dei tuoi casi limite: conferenza stampa con progetto finanziato da €100.000 (K=2), e servizi turistici/esperienziali organizzati dalla Startup con commissione all'80%.",
+    description:
+      "Simula i tuoi esempi reali: 10 sponsor con pool cross-DB (200k) + DB Startup (200k) + CLV €500/€2.500, conferenza stampa €100.000 (K=2), servizi turismo all'80% e contest con 100 partecipanti.",
     inputs: {
       sovrapposizioneCanaliPct: 15,
-      kViralita: 2.0,
+      kViralitaOpera: 2.0,
       decadimentoViralePct: 55,
       cpmCulturaleEur: 90,
+      dedupUtentiSuSessioniPct: 85,
       quotaRicaviAnno1Pct: 35,
+      quotaCapexAnno1Pct: 75,
+      quotaOpexFissiAnno1Pct: 48,
       dsoGiorniIncassoB2G: 60,
+      dsoGiorniIncassoB2B: 30,
       capexPiattaforma24m: 65000,
       costiFissiRedazione24m: 130000,
       costiSalesAbm24m: 78000,
@@ -1390,14 +1820,16 @@ export const PRESETS: Record<PresetId, { label: string; badge: string; descripti
       f3Contratti24m: 2,
       f3PrezzoEur: 18400,
       fCogsPct: 25,
-      fDbEntiContattiTot: 80000,
-      fDbRedemptionPct: 10,
-      fDbLetturaProfondaPct: 50,
-      fIstitutiAttivati: 90,
-      fClassiPerIstituto: 3.0,
+      fLicenzeMediePerEnte: 500,
+      fContattiCanaliLocaliPerEnte: 4000,
+      fRedemptionEntiPct: 14,
+      fLetturaProfondaEntiPct: 50,
+      fScuoleDanzaPerEnte: 5,
+      fClassiGruppiPerScuola: 3.0,
       fCompletamentoDidatticoPct: 60,
       fCapexEvitatoPerEnteEur: 28000,
       tAccessiGratuitiTerritorio: 20000,
+      tTurismoLetturaProfondaPct: 25,
       tEstensioneSoggiornoPct: 14,
       tGiorniExtraMedi: 1.5,
       tSpesaGiornalieraTerritorioEur: 90,
@@ -1405,43 +1837,54 @@ export const PRESETS: Record<PresetId, { label: string; badge: string; descripti
       tConvBookingPct: 12,
       tScontrinoMedioServizioEur: 75,
       tCommissioneStartupPct: 80,
+      tCogsGestioneBookingPct: 15,
 
-      aCultContratti24m: 4,
+      aCultContratti24m: 5,
       aCultPrezzoEur: 20000,
       aCogsCultPct: 30,
-      aCultCrmContattiTot: 95000,
-      aCultRedemptionPct: 7,
-      aCultLetturaProfondaPct: 45,
-      aTechContratti24m: 4,
+      aTechContratti24m: 5,
       aTechTicketLordoEur: 16000,
       aTechBarterPct: 20,
       aCogsTechLordoPct: 38,
-      aLeadPerTechPartner: 25,
-      aSqlRatePct: 35,
-      aCplFieraComparabileEur: 190,
-      aSurveyCompletionPct: 26,
+      aSponsorTrailerAutonomi: 0,
+      aPrezzoSponsorTrailerEur: 0,
+      aCrmProprioPerAzienda: 20000,
+      aQuotaScambioCrossSponsorPct: 50,
+      aDbProprioStartupPerAzienda: 20000,
+      aQuotaAudienceOperaEspostaPct: 40,
+      aRedemptionCrmProprioPct: 8,
+      aClickLoyaltyCrisisPct: 30,
+      aConvRetentionLoyaltyPct: 14,
+      aQuotaClvSalvataRetentionPct: 40,
+      aAperturaNuoviContattiStartupPct: 10,
+      aTassoLeadSuLettoriNuoviPct: 3.5,
+      aTassoChiusuraVenditaB2cPct: 14,
+      aTassoChiusuraVenditaB2bPct: 16,
+      aClvB2cEur: 500,
+      aClvB2bTechEur: 2500,
+      aCplComparabileMercatoEur: 110,
+      aSurveyCompletionPct: 28,
       aGdprOptInPct: 35,
       aValoreRicercaEvitataBrandEur: 7000,
-      aClickPopupImportantePct: 32,
-      aConvObiettivoBrandPct: 14,
-      aValoreObiettivoBrandEur: 220,
 
       iSpeciali24m: 3,
       iReachPropriaIstituzione: 180000,
       iReachStartupIncrementale: 120000,
       iCostoProdEvitatoEnteEur: 20000,
       iCostoDirettoStartupSpecialeEur: 5000,
-      iConvDbIstituzioneAzioniStartupPct: 4.0,
-      iValoreMedioAzioneMonetizzataEur: 18,
+      iQuotaDbVersoTurismoPct: 5,
+      iQuotaDbVersoContestPct: 8,
       iMoltiplicatoreAutorevolezzaPct: 65,
       iContattiB2BOriginePerSpeciale: 12,
       iConvPipelineIstituzioniPct: 30,
       iValoreMedioDealPipelineEur: 16000,
       iAperturaContenutoPct: 28,
+      iLetturaProfondaSuAperturaPct: 40,
       iClickEventoImportantePct: 35,
-      iConvObiettivoIstituzionePct: 8,
-      iValoreObiettivoIstituzioneEur: 250,
-      iValoreProgettoSpecialeFissoEur: 100000,
+      iConvMicroObiettivoIstituzionePct: 10,
+      iValoreMicroObiettivoIstituzioneEur: 35,
+      iMacroProgettiFinanziatiCount: 1,
+      iValoreMacroProgettoEur: 100000,
       iCopieStampaEsposte: 100000,
       iQrScanPct: 2.5,
       iStampaLetturaProfondaPct: 55,
@@ -1450,23 +1893,40 @@ export const PRESETS: Record<PresetId, { label: string; badge: string; descripti
       iRipreseStampaPerCiclo: 28,
       iRispostaIstituzionalePct: 35,
 
-      cTappe24m: 8,
-      cVotiPerTappa: 3000,
-      cTassoDonantiSuVotantiPct: 12,
-      cDonazioneMediaEur: 4,
-      cFeeGestioneStartupPct: 5,
+      cTappe24m: 10,
+      cCompagnieContest: 30,
+      cScuoleContest: 70,
+      cStudentiPerCompagnia: 14,
+      cStudentiPerScuola: 40,
+      cPrezzoIscrizioneCompagniaEur: 150,
+      cPrezzoIscrizioneScuolaEur: 150,
+      cLicenzeMediePerPartecipante: 8,
+      cPrezzoLicenzaConcorsoEur: 35,
+      cInvitiMediPerStudente: 10,
+      cConvInvitiContestPct: 35,
+      cSovrapposizioneContestPct: 20,
+      cQuotaSpettatoriLettoriOperaPct: 50,
+      cTassoDonantiSuVotantiPct: 14,
+      cDonazioneMediaVotoEur: 4,
+      cTassoSbloccaDonandoReaderPct: 3.0,
+      cImportoSbloccaDonandoEur: 2,
       cCostoGatewayPct: 2.5,
+      cFeeGestioneStartupDonazioniPct: 0,
+      cQuotaDonazioniCommunityPct: 80,
+      cQuotaDonazioniFondazioniPct: 20,
+      cQuotaDonazioniAziendeEsgPct: 0,
       cValoreBorsaEur: 1000,
-      cRitenzioneSerialePct: 58,
-      cCommunitySemiOrganici: 10000,
-      cReturningMau: 3200,
-      cVisiteAnnuePerMau: 2.5,
+      cRitenzioneSerialePct: 60,
+      cCostoVariabilePerPartecipanteEur: 65,
+      cCostoFissoPerTappaGiuriaEur: 650,
+      cReturningMau: 3400,
+      cVisiteAnnuePerMau: 2.6,
       cCtrCallPct: 16,
-      cFeaturedCalls24m: 28,
+      cFeaturedCalls24m: 30,
       cFeaturedCallPrezzoEur: 350,
-      cCostiCommunityOps24m: 28000,
+      cCostiCuratelaBandi24m: 18000,
       cArchiveLicenzeY1: 12,
-      cArchiveNuoveY2: 16,
+      cArchiveNuoveY2: 18,
       cArchiveRinnovoPct: 82,
       cArchivePrezzoAnnuoEur: 1800,
       cArchiveCogsPct: 10,
@@ -1475,8 +1935,9 @@ export const PRESETS: Record<PresetId, { label: string; badge: string; descripti
       tPrezzoSottosogliaEur: 25000,
       tCommesseEnterprise24m: 2,
       tPrezzoEnterpriseEur: 45000,
+      tRinnovoSaasY2Pct: 100,
       tCanoneSaasAnnuoEur: 4000,
-      tCommesseY1AttiveSaas: 2,
+      tCogsSaasPct: 15,
       tCostoMarginaleProduzionePct: 45,
       tQuotaLeadPlgBadgePct: 30,
       tCapexAlternativoClienteEur: 42000,
@@ -1487,14 +1948,18 @@ export const PRESETS: Record<PresetId, { label: string; badge: string; descripti
   conservativo: {
     label: "Stress-Test Conservativo",
     badge: "Minimo",
-    description: "Scenario prudente con viralità quasi nulla (K=0,10), adozione lenta e DSO esteso a 120 giorni per verificare la tenuta finanziaria.",
+    description: "Adozione prudente, viralità bassa (K=0,10), nessun ricavo iscrizione contest (gratis) e DSO 120 gg per verificare il punto di pareggio.",
     inputs: {
       sovrapposizioneCanaliPct: 25,
-      kViralita: 0.1,
+      kViralitaOpera: 0.1,
       decadimentoViralePct: 60,
       cpmCulturaleEur: 70,
+      dedupUtentiSuSessioniPct: 85,
       quotaRicaviAnno1Pct: 26,
+      quotaCapexAnno1Pct: 75,
+      quotaOpexFissiAnno1Pct: 48,
       dsoGiorniIncassoB2G: 120,
+      dsoGiorniIncassoB2B: 60,
       capexPiattaforma24m: 55000,
       costiFissiRedazione24m: 110000,
       costiSalesAbm24m: 60000,
@@ -1508,14 +1973,16 @@ export const PRESETS: Record<PresetId, { label: string; badge: string; descripti
       f3Contratti24m: 1,
       f3PrezzoEur: 18400,
       fCogsPct: 26,
-      fDbEntiContattiTot: 50000,
-      fDbRedemptionPct: 5,
-      fDbLetturaProfondaPct: 40,
-      fIstitutiAttivati: 65,
-      fClassiPerIstituto: 2.8,
+      fLicenzeMediePerEnte: 300,
+      fContattiCanaliLocaliPerEnte: 2500,
+      fRedemptionEntiPct: 10,
+      fLetturaProfondaEntiPct: 40,
+      fScuoleDanzaPerEnte: 3,
+      fClassiGruppiPerScuola: 2.8,
       fCompletamentoDidatticoPct: 48,
       fCapexEvitatoPerEnteEur: 24000,
       tAccessiGratuitiTerritorio: 14000,
+      tTurismoLetturaProfondaPct: 20,
       tEstensioneSoggiornoPct: 8,
       tGiorniExtraMedi: 1.2,
       tSpesaGiornalieraTerritorioEur: 75,
@@ -1523,43 +1990,54 @@ export const PRESETS: Record<PresetId, { label: string; badge: string; descripti
       tConvBookingPct: 7,
       tScontrinoMedioServizioEur: 85,
       tCommissioneStartupPct: 10,
+      tCogsGestioneBookingPct: 12,
 
       aCultContratti24m: 3,
       aCultPrezzoEur: 16000,
       aCogsCultPct: 32,
-      aCultCrmContattiTot: 70000,
-      aCultRedemptionPct: 4,
-      aCultLetturaProfondaPct: 38,
       aTechContratti24m: 3,
       aTechTicketLordoEur: 12000,
       aTechBarterPct: 20,
       aCogsTechLordoPct: 40,
-      aLeadPerTechPartner: 15,
-      aSqlRatePct: 25,
-      aCplFieraComparabileEur: 160,
+      aSponsorTrailerAutonomi: 0,
+      aPrezzoSponsorTrailerEur: 0,
+      aCrmProprioPerAzienda: 15000,
+      aQuotaScambioCrossSponsorPct: 25,
+      aDbProprioStartupPerAzienda: 15000,
+      aQuotaAudienceOperaEspostaPct: 25,
+      aRedemptionCrmProprioPct: 4,
+      aClickLoyaltyCrisisPct: 18,
+      aConvRetentionLoyaltyPct: 7,
+      aQuotaClvSalvataRetentionPct: 30,
+      aAperturaNuoviContattiStartupPct: 6,
+      aTassoLeadSuLettoriNuoviPct: 2.2,
+      aTassoChiusuraVenditaB2cPct: 10,
+      aTassoChiusuraVenditaB2bPct: 12,
+      aClvB2cEur: 500,
+      aClvB2bTechEur: 2500,
+      aCplComparabileMercatoEur: 75,
       aSurveyCompletionPct: 18,
       aGdprOptInPct: 26,
       aValoreRicercaEvitataBrandEur: 5000,
-      aClickPopupImportantePct: 18,
-      aConvObiettivoBrandPct: 7,
-      aValoreObiettivoBrandEur: 110,
 
       iSpeciali24m: 2,
       iReachPropriaIstituzione: 140000,
       iReachStartupIncrementale: 40000,
       iCostoProdEvitatoEnteEur: 15000,
       iCostoDirettoStartupSpecialeEur: 4500,
-      iConvDbIstituzioneAzioniStartupPct: 1.5,
-      iValoreMedioAzioneMonetizzataEur: 12,
+      iQuotaDbVersoTurismoPct: 2.5,
+      iQuotaDbVersoContestPct: 4,
       iMoltiplicatoreAutorevolezzaPct: 25,
       iContattiB2BOriginePerSpeciale: 8,
       iConvPipelineIstituzioniPct: 20,
       iValoreMedioDealPipelineEur: 12000,
       iAperturaContenutoPct: 16,
+      iLetturaProfondaSuAperturaPct: 30,
       iClickEventoImportantePct: 18,
-      iConvObiettivoIstituzionePct: 4,
-      iValoreObiettivoIstituzioneEur: 250,
-      iValoreProgettoSpecialeFissoEur: 0,
+      iConvMicroObiettivoIstituzionePct: 5,
+      iValoreMicroObiettivoIstituzioneEur: 25,
+      iMacroProgettiFinanziatiCount: 0,
+      iValoreMacroProgettoEur: 100000,
       iCopieStampaEsposte: 70000,
       iQrScanPct: 1.2,
       iStampaLetturaProfondaPct: 45,
@@ -1569,20 +2047,37 @@ export const PRESETS: Record<PresetId, { label: string; badge: string; descripti
       iRispostaIstituzionalePct: 20,
 
       cTappe24m: 6,
-      cVotiPerTappa: 1800,
-      cTassoDonantiSuVotantiPct: 7,
-      cDonazioneMediaEur: 2.5,
-      cFeeGestioneStartupPct: 0,
+      cCompagnieContest: 15,
+      cScuoleContest: 35,
+      cStudentiPerCompagnia: 10,
+      cStudentiPerScuola: 28,
+      cPrezzoIscrizioneCompagniaEur: 0,
+      cPrezzoIscrizioneScuolaEur: 0,
+      cLicenzeMediePerPartecipante: 4,
+      cPrezzoLicenzaConcorsoEur: 30,
+      cInvitiMediPerStudente: 6,
+      cConvInvitiContestPct: 25,
+      cSovrapposizioneContestPct: 25,
+      cQuotaSpettatoriLettoriOperaPct: 35,
+      cTassoDonantiSuVotantiPct: 8,
+      cDonazioneMediaVotoEur: 3,
+      cTassoSbloccaDonandoReaderPct: 1.5,
+      cImportoSbloccaDonandoEur: 2,
       cCostoGatewayPct: 2.5,
+      cFeeGestioneStartupDonazioniPct: 0,
+      cQuotaDonazioniCommunityPct: 80,
+      cQuotaDonazioniFondazioniPct: 20,
+      cQuotaDonazioniAziendeEsgPct: 0,
       cValoreBorsaEur: 1000,
       cRitenzioneSerialePct: 46,
-      cCommunitySemiOrganici: 6000,
+      cCostoVariabilePerPartecipanteEur: 55,
+      cCostoFissoPerTappaGiuriaEur: 500,
       cReturningMau: 1800,
       cVisiteAnnuePerMau: 2.0,
       cCtrCallPct: 12,
       cFeaturedCalls24m: 12,
       cFeaturedCallPrezzoEur: 250,
-      cCostiCommunityOps24m: 24000,
+      cCostiCuratelaBandi24m: 14000,
       cArchiveLicenzeY1: 7,
       cArchiveNuoveY2: 9,
       cArchiveRinnovoPct: 75,
@@ -1593,8 +2088,9 @@ export const PRESETS: Record<PresetId, { label: string; badge: string; descripti
       tPrezzoSottosogliaEur: 22000,
       tCommesseEnterprise24m: 1,
       tPrezzoEnterpriseEur: 40000,
+      tRinnovoSaasY2Pct: 100,
       tCanoneSaasAnnuoEur: 3000,
-      tCommesseY1AttiveSaas: 1,
+      tCogsSaasPct: 15,
       tCostoMarginaleProduzionePct: 48,
       tQuotaLeadPlgBadgePct: 20,
       tCapexAlternativoClienteEur: 35000,
@@ -1627,10 +2123,12 @@ export interface SimulationResult {
   audience: {
     grossReach: number;
     uniqueReach: number;
+    contestStudentsTot: number;
+    contestKFactor: number;
+    contestViewersVoters: number;
     primaryReaders: number;
     viralMultiplier: number;
     effectiveKNet: number;
-    viralAddedReaders: number;
     totalActiveReaders: number;
     directCacEur: number;
     fullyLoadedCacEur: number;
@@ -1642,9 +2140,10 @@ export interface SimulationResult {
     revenueY2Cash: number;
     totalRevenueCash24m: number;
     tourismCommissionRevenue24m: number;
-    institutionDbMonetized24m: number;
+    contestDirectRevenue24m: number;
+    votaDonandoGross24m: number;
+    votaDonandoNetToStakeholders24m: number;
     barterValue24m: number;
-    passThroughScholarshipFund24m: number;
     totalCogsCash24m: number;
     grossProfitCash24m: number;
     grossMarginPct: number;
@@ -1660,37 +2159,62 @@ export interface SimulationResult {
     formulas: FormulaTrace[];
   };
   stakeholders: Record<StakeholderId, StakeholderOutput> & {
-    // campi extra utili nelle viste dedicate
     raw: {
       fRevB2G: number;
+      fContractsTot: number;
+      fLicensesIssued: number;
+      fLocalReachFromContracts: number;
+      fSchoolsTot: number;
+      fClassesTot: number;
       fTourismGmv: number;
       fTourismCommStartup: number;
       fTourismNetOperators: number;
       fTourismExtraDays: number;
       fTourismSpillover: number;
-      fClasses: number;
       fAvoidedCapex: number;
+      fDonationsShare: number;
       aCultCash: number;
       aTechCash: number;
+      aTrailerAddonCash: number;
       aBarter: number;
-      aLeadsTot: number;
-      aSqlCount: number;
-      aBrandEffectiveCplSql: number;
-      aBrandEventsRead: number;
-      aBrandGoalsValue: number;
+      aTotalCompanies: number;
+      aCrmProprioTot: number;
+      aCrossPoolContacts: number;
+      aStartupDbContacts: number;
+      aTotalNewReachForBrands: number;
+      aNewBrandReadersFromDbAndOpera: number;
+      aLeadsGeneratedFromAudience: number;
+      aB2cCustomers: number;
+      aB2bCustomers: number;
+      aClvValueNewCustomers: number;
+      aRetentionClvValue: number;
+      aLeadsEquivValue: number;
+      aBrandEffectiveCpl: number;
+      aDonationsEsgShare: number;
       iReachStartupDedup: number;
       iCpmMediaValue: number;
       iAvoidedProdCost: number;
-      iDbMonetizedStartup: number;
+      iDbTrafficToTourism: number;
+      iDbTrafficToContest: number;
       iPipelineValueEstimated: number;
       iImportantClicks: number;
+      iMicroConversions: number;
       iEngagementGoalValue: number;
       iPrintQrScans: number;
-      cTotalVotes: number;
-      cDonors: number;
-      cGrossDonations: number;
-      cStartupFee: number;
-      cNetScholarshipPool: number;
+      cContestParticipants: number;
+      cStudentsTot: number;
+      cContestK: number;
+      cContestVoters: number;
+      cContestRegistrationRev: number;
+      cContestLicensesCount: number;
+      cContestLicensesRev: number;
+      cContestDirectCogs: number;
+      cVotaDonandoContestGross: number;
+      cSbloccaDonandoReaderGross: number;
+      cTotalDonationsGross: number;
+      cStartupDonationFee: number;
+      cDonationsNetPool: number;
+      cDonationsCommunityShare: number;
       cScholarshipsFunded: number;
       cCallAppsAnnual: number;
       cFeaturedCallsRev: number;
@@ -1698,6 +2222,7 @@ export interface SimulationResult {
       cArchiveExitArr: number;
       cArchiveRev24m: number;
       tProjectsCount: number;
+      tSaasEligibleCount: number;
       tRev24m: number;
       tContribMarginEur: number;
       tContribMarginPct: number;
@@ -1713,14 +2238,33 @@ const fDec = (n: number, d = 2) => n.toLocaleString("it-IT", { minimumFractionDi
 export function runSimulation(inp: SimulatorInputs): SimulationResult {
   const overlapFactor = Math.max(0, 1 - inp.sovrapposizioneCanaliPct / 100);
 
-  // --- 1. FONDAZIONI ED ENTI ---
-  const fRevB2G = inp.f1Contratti24m * inp.f1PrezzoEur + inp.f2Contratti24m * inp.f2PrezzoEur + inp.f3Contratti24m * inp.f3PrezzoEur;
+  // --- A. MOTORE CORE: CONTEST ONLINE CON TRAILER (3.2) ---
+  const cContestParticipants = inp.cCompagnieContest + inp.cScuoleContest;
+  const cStudentsTot = inp.cCompagnieContest * inp.cStudentiPerCompagnia + inp.cScuoleContest * inp.cStudentiPerScuola;
+  const cContestK = inp.cInvitiMediPerStudente * (inp.cConvInvitiContestPct / 100);
+  const cContestVoters = cStudentsTot * cContestK * Math.max(0, 1 - inp.cSovrapposizioneContestPct / 100);
+  const cContestReadersIntoOpera = cContestVoters * (inp.cQuotaSpettatoriLettoriOperaPct / 100);
+
+  const cContestRegistrationRev =
+    inp.cCompagnieContest * inp.cPrezzoIscrizioneCompagniaEur + inp.cScuoleContest * inp.cPrezzoIscrizioneScuolaEur;
+  const cContestLicensesCount = cContestParticipants * inp.cLicenzeMediePerPartecipante;
+  const cContestLicensesRev = cContestLicensesCount * inp.cPrezzoLicenzaConcorsoEur;
+  const cContestDirectCogs =
+    cContestParticipants * inp.cCostoVariabilePerPartecipanteEur + inp.cTappe24m * inp.cCostoFissoPerTappaGiuriaEur;
+
+  // --- 1. FONDAZIONI ED ENTI (Contratti -> Licenze, Comuni, Scuole di Danza & Turismo) ---
   const fContractsTot = inp.f1Contratti24m + inp.f2Contratti24m + inp.f3Contratti24m;
+  const fRevB2G = inp.f1Contratti24m * inp.f1PrezzoEur + inp.f2Contratti24m * inp.f2PrezzoEur + inp.f3Contratti24m * inp.f3PrezzoEur;
   const fAcv = fContractsTot > 0 ? fRevB2G / fContractsTot : 0;
   const fCogsB2G = fRevB2G * (inp.fCogsPct / 100);
-  const fDbRedemptions = inp.fDbEntiContattiTot * (inp.fDbRedemptionPct / 100);
-  const fDbDeepReaders = fDbRedemptions * (inp.fDbLetturaProfondaPct / 100);
-  const fClasses = Math.round(inp.fIstitutiAttivati * inp.fClassiPerIstituto);
+
+  // Origine trasparente: solo gli enti contrattualizzati distribuiscono licenze & promuovono scuole di danza locali
+  const fLicensesIssued = fContractsTot * inp.fLicenzeMediePerEnte;
+  const fLocalReachFromContracts = fContractsTot * (inp.fLicenzeMediePerEnte + inp.fContattiCanaliLocaliPerEnte);
+  const fDbRedemptions = fLocalReachFromContracts * (inp.fRedemptionEntiPct / 100);
+  const fDbDeepReaders = fDbRedemptions * (inp.fLetturaProfondaEntiPct / 100);
+  const fSchoolsTot = Math.round(fContractsTot * inp.fScuoleDanzaPerEnte);
+  const fClassesTot = Math.round(fSchoolsTot * inp.fClassiGruppiPerScuola);
   const fAvoidedCapex = fContractsTot * inp.fCapexEvitatoPerEnteEur;
 
   // 4.4 Turismo Dual-Flow
@@ -1730,52 +2274,27 @@ export function runSimulation(inp: SimulatorInputs): SimulationResult {
   const fTourismGmv = fTourismBookingsCount * inp.tScontrinoMedioServizioEur;
   const fTourismCommStartup = fTourismGmv * (inp.tCommissioneStartupPct / 100);
   const fTourismNetOperators = fTourismGmv - fTourismCommStartup;
-  const fTourismCogsStartup = fTourismCommStartup * 0.12; // gestione/supporto booking startup
-  const fStartupCash = fRevB2G + fTourismCommStartup;
-  const fStakeholderMonetary = fAvoidedCapex + fTourismSpillover + fTourismNetOperators;
+  const fTourismCogsStartup = fTourismCommStartup * (inp.tCogsGestioneBookingPct / 100);
+  const fTourismDeepReaders = inp.tAccessiGratuitiTerritorio * (inp.tTurismoLetturaProfondaPct / 100);
 
-  // --- 2. AZIENDE E BRAND ---
-  const aCultCash = inp.aCultContratti24m * inp.aCultPrezzoEur;
-  const aCogsCult = aCultCash * (inp.aCogsCultPct / 100);
-  const aCultRedemptions = inp.aCultCrmContattiTot * (inp.aCultRedemptionPct / 100);
-  const aCultDeepReaders = aCultRedemptions * (inp.aCultLetturaProfondaPct / 100);
-
-  const aTechGross = inp.aTechContratti24m * inp.aTechTicketLordoEur;
-  const aBarter = aTechGross * (inp.aTechBarterPct / 100);
-  const aTechCash = aTechGross - aBarter;
-  const aTechGrossCogs = aTechGross * (inp.aCogsTechLordoPct / 100);
-  const aTechCashCogs = Math.max(0, aTechGrossCogs - aBarter);
-
-  const aLeadsTot = inp.aTechContratti24m * inp.aLeadPerTechPartner;
-  const aSqlCount = aLeadsTot * (inp.aSqlRatePct / 100);
-  const aBrandEffectiveCplSql = aSqlCount > 0 ? aTechGross / aSqlCount : 0;
-  const aFairEquivValue = aSqlCount * inp.aCplFieraComparabileEur;
-  const aResearchValue = (inp.aCultContratti24m + inp.aTechContratti24m) * inp.aValoreRicercaEvitataBrandEur;
-
-  const aBrandEventsRead = aCultDeepReaders * (inp.aClickPopupImportantePct / 100);
-  const aBrandGoalsCount = aBrandEventsRead * (inp.aConvObiettivoBrandPct / 100);
-  const aBrandGoalsValue = aBrandGoalsCount * inp.aValoreObiettivoBrandEur;
-  const aStartupCash = aCultCash + aTechCash;
-
-  // --- 3. ISTITUZIONI CULTURALI E MEDIA ---
+  // --- 3. ISTITUZIONI CULTURALI E MEDIA (Doppia Diffusione + Engagement + Stampa/Inchieste) ---
   const iReachStartupDedup = inp.iReachStartupIncrementale * overlapFactor;
   const iCpmMediaValue = (iReachStartupDedup / 1000) * inp.cpmCulturaleEur;
   const iAvoidedProdCost = inp.iSpeciali24m * inp.iCostoProdEvitatoEnteEur;
   const iStartupProdCost = inp.iSpeciali24m * inp.iCostoDirettoStartupSpecialeEur + inp.iCostoPonteStampaStartupEur;
 
-  // Beneficio monetizzabile Startup dal DB Istituzione (inviti ad azioni monetizzabili)
-  const iDbMonetizedActions = inp.iReachPropriaIstituzione * (inp.iConvDbIstituzioneAzioniStartupPct / 100);
-  const iDbMonetizedStartup = iDbMonetizedActions * inp.iValoreMedioAzioneMonetizzataEur;
-  const iDbMonetizedCogs = iDbMonetizedStartup * 0.15;
+  // Traffico qualificato generato dal DB Istituzione verso i flussi reali (no doppio conteggio licenze!)
+  const iDbTrafficToTourism = inp.iReachPropriaIstituzione * (inp.iQuotaDbVersoTurismoPct / 100);
+  const iDbTrafficToContest = inp.iReachPropriaIstituzione * (inp.iQuotaDbVersoContestPct / 100);
 
-  // Engagement "lettura di qualcosa di importante" (Loyalty / Crisis / Fundraising)
   const iTotalReachCombined = inp.iReachPropriaIstituzione + iReachStartupDedup;
   const iOpenedReaders = iTotalReachCombined * (inp.iAperturaContenutoPct / 100);
+  const iDeepReaders = iOpenedReaders * (inp.iLetturaProfondaSuAperturaPct / 100);
   const iImportantClicks = iOpenedReaders * (inp.iClickEventoImportantePct / 100);
-  const iEngagementConversions = iImportantClicks * (inp.iConvObiettivoIstituzionePct / 100);
-  const iEngagementGoalValue = iEngagementConversions * inp.iValoreObiettivoIstituzioneEur + inp.iValoreProgettoSpecialeFissoEur;
+  const iMicroConversions = iImportantClicks * (inp.iConvMicroObiettivoIstituzionePct / 100);
+  const iEngagementGoalValue =
+    iMicroConversions * inp.iValoreMicroObiettivoIstituzioneEur + inp.iMacroProgettiFinanziatiCount * inp.iValoreMacroProgettoEur;
 
-  // Pipeline & Stampa
   const iPipelineContacts = inp.iSpeciali24m * inp.iContattiB2BOriginePerSpeciale;
   const iPipelineDealsBase = iPipelineContacts * (inp.iConvPipelineIstituzioniPct / 100);
   const iPipelineDealsWithHalo = iPipelineDealsBase * (1 + inp.iMoltiplicatoreAutorevolezzaPct / 100);
@@ -1785,14 +2304,100 @@ export function runSimulation(inp: SimulatorInputs): SimulationResult {
   const iPrintDeepReaders = iPrintQrScans * (inp.iStampaLetturaProfondaPct / 100);
   const iPressClippingsTot = inp.iCicliInchiesta * inp.iRipreseStampaPerCiclo;
 
-  // --- 4. COMMUNITY DANZA & RICERCA 4.1 ---
-  const cTotalVotes = inp.cTappe24m * inp.cVotiPerTappa;
-  const cDonors = cTotalVotes * (inp.cTassoDonantiSuVotantiPct / 100);
-  const cGrossDonations = cDonors * inp.cDonazioneMediaEur;
-  const cGatewayFees = cGrossDonations * (inp.cCostoGatewayPct / 100);
-  const cStartupFee = cGrossDonations * (inp.cFeeGestioneStartupPct / 100);
-  const cNetScholarshipPool = Math.max(0, cGrossDonations - cGatewayFees - cStartupFee);
-  const cScholarshipsFunded = Math.floor(cNetScholarshipPool / Math.max(1, inp.cValoreBorsaEur));
+  // --- B. AUDIENCE COMPLESSIVA & VIRALITA' OPERA (Prima del calcolo Aziende & Vota Donando Reader) ---
+  const primaryOperaReaders =
+    fDbDeepReaders +
+    iDeepReaders +
+    iPrintDeepReaders +
+    fTourismDeepReaders +
+    cContestReadersIntoOpera;
+
+  const decay = Math.max(0, 1 - inp.decadimentoViralePct / 100);
+  const w1 = inp.kViralitaOpera;
+  const w2 = w1 * (inp.kViralitaOpera * decay);
+  const w3 = w2 * (inp.kViralitaOpera * decay * decay);
+  const effectiveKNet = w1 + w2 + w3;
+  const viralMultiplier = 1 + effectiveKNet;
+  const viralOperaReaders = primaryOperaReaders * viralMultiplier;
+
+  // --- 2. AZIENDE E BRAND (3 Basi Dati Esplicite + Trailer + CLV €500 / €2.500) ---
+  const aTotalCompanies = inp.aCultContratti24m + inp.aTechContratti24m;
+  const aCultCash = inp.aCultContratti24m * inp.aCultPrezzoEur;
+  const aCogsCult = aCultCash * (inp.aCogsCultPct / 100);
+  const aTechGross = inp.aTechContratti24m * inp.aTechTicketLordoEur;
+  const aBarter = aTechGross * (inp.aTechBarterPct / 100);
+  const aTechCash = aTechGross - aBarter;
+  const aTechGrossCogs = aTechGross * (inp.aCogsTechLordoPct / 100);
+  const aTechCashCogs = Math.max(0, aTechGrossCogs - aBarter);
+  const aTrailerAddonCash = inp.aSponsorTrailerAutonomi * inp.aPrezzoSponsorTrailerEur;
+
+  // Base 1: CRM Proprio delle Aziende (Retention / Brand Loyalty / Crisis Management)
+  const aCrmProprioTot = aTotalCompanies * inp.aCrmProprioPerAzienda;
+  const aCrmProprioReaders = aCrmProprioTot * (inp.aRedemptionCrmProprioPct / 100);
+  const aBrandEventsRead = aCrmProprioReaders * (inp.aClickLoyaltyCrisisPct / 100);
+  const aRetentionCustomers = aBrandEventsRead * (inp.aConvRetentionLoyaltyPct / 100);
+  // Ripartizione pro-quota tra B2C e B2B Tech su CLV conservato
+  const b2cCompanyShare = aTotalCompanies > 0 ? inp.aCultContratti24m / aTotalCompanies : 0.5;
+  const aBlendedClv = b2cCompanyShare * inp.aClvB2cEur + (1 - b2cCompanyShare) * inp.aClvB2bTechEur;
+  const aRetentionClvValue = aRetentionCustomers * aBlendedClv * (inp.aQuotaClvSalvataRetentionPct / 100);
+
+  // Base 2: Pool Cross-Sponsor orchestrato dalla Startup (attivo solo se >= 2 aziende sponsor)
+  const aCrossPoolContacts = aTotalCompanies >= 2 ? aCrmProprioTot * (inp.aQuotaScambioCrossSponsorPct / 100) : 0;
+  // Base 3: Database Proprietario selezionato/segmentato dalla Startup (default 20k per azienda)
+  const aStartupDbContacts = aTotalCompanies * inp.aDbProprioStartupPerAzienda;
+
+  const aTotalNewReachForBrands = aCrossPoolContacts + aStartupDbContacts;
+  const aNewReadersFromStartupDbAndPool = aTotalNewReachForBrands * (inp.aAperturaNuoviContattiStartupPct / 100);
+  const aExposedOperaAndTrailer = (viralOperaReaders + cContestVoters) * (inp.aQuotaAudienceOperaEspostaPct / 100);
+  const aNewBrandReadersFromDbAndOpera = aNewReadersFromStartupDbAndPool + aExposedOperaAndTrailer;
+
+  const aLeadsGeneratedFromAudience = aNewBrandReadersFromDbAndOpera * (inp.aTassoLeadSuLettoriNuoviPct / 100);
+  const aLeadsB2c = aLeadsGeneratedFromAudience * b2cCompanyShare;
+  const aLeadsB2b = aLeadsGeneratedFromAudience * (1 - b2cCompanyShare);
+  const aB2cCustomers = aLeadsB2c * (inp.aTassoChiusuraVenditaB2cPct / 100);
+  const aB2bCustomers = aLeadsB2b * (inp.aTassoChiusuraVenditaB2bPct / 100);
+  const aClvValueNewCustomers = aB2cCustomers * inp.aClvB2cEur + aB2bCustomers * inp.aClvB2bTechEur;
+  const aLeadsEquivValue = aLeadsGeneratedFromAudience * inp.aCplComparabileMercatoEur;
+  const aTotalSponsorInvest = aCultCash + aTechGross + aTrailerAddonCash;
+  const aBrandEffectiveCpl = aLeadsGeneratedFromAudience > 0 ? aTotalSponsorInvest / aLeadsGeneratedFromAudience : 0;
+  const aResearchValue = aTotalCompanies * inp.aValoreRicercaEvitataBrandEur;
+  const aStartupCash = aCultCash + aTechCash + aTrailerAddonCash;
+
+  // --- C. TOTAL ACTIVE READERS UNIFICATO (inclusi lettori da CRM & DB Aziende) & ZPD ---
+  const totalActiveReaders = viralOperaReaders + aCrmProprioReaders + aNewReadersFromStartupDbAndPool;
+  const uniqueUsersRatio = inp.dedupUtentiSuSessioniPct / 100;
+  const zeroPartyProfiles = totalActiveReaders * uniqueUsersRatio * (inp.aSurveyCompletionPct / 100) * (inp.aGdprOptInPct / 100);
+
+  const grossReach =
+    fLocalReachFromContracts +
+    aCrmProprioTot +
+    aTotalNewReachForBrands +
+    inp.iReachPropriaIstituzione +
+    inp.iReachStartupIncrementale +
+    inp.iCopieStampaEsposte +
+    inp.tAccessiGratuitiTerritorio +
+    inp.tAccessiBookingStartup +
+    cContestVoters;
+  const uniqueReach = grossReach * overlapFactor;
+
+  const directCacEur = totalActiveReaders > 0 ? inp.costiDistribuzioneSeeding24m / totalActiveReaders : 0;
+  const fullyLoadedCacEur =
+    totalActiveReaders > 0 ? (inp.costiDistribuzioneSeeding24m + inp.costiSalesAbm24m) / totalActiveReaders : 0;
+
+  // --- 4. VOTA DONANDO + SBLOCCA DONANDO + BANDI 4.3 + ARCHIVE 4.1 ---
+  const cVotaDonandoContestGross = cContestVoters * (inp.cTassoDonantiSuVotantiPct / 100) * inp.cDonazioneMediaVotoEur;
+  const cSbloccaDonandoReaderGross = totalActiveReaders * (inp.cTassoSbloccaDonandoReaderPct / 100) * inp.cImportoSbloccaDonandoEur;
+  const cTotalDonationsGross = cVotaDonandoContestGross + cSbloccaDonandoReaderGross;
+
+  const cGatewayFees = cTotalDonationsGross * (inp.cCostoGatewayPct / 100);
+  const cStartupDonationFee = cTotalDonationsGross * (inp.cFeeGestioneStartupDonazioniPct / 100);
+  const cDonationsNetPool = Math.max(0, cTotalDonationsGross - cGatewayFees - cStartupDonationFee);
+
+  const allocSum = Math.max(1, inp.cQuotaDonazioniCommunityPct + inp.cQuotaDonazioniFondazioniPct + inp.cQuotaDonazioniAziendeEsgPct);
+  const cDonationsCommunityShare = cDonationsNetPool * (inp.cQuotaDonazioniCommunityPct / allocSum);
+  const fDonationsShare = cDonationsNetPool * (inp.cQuotaDonazioniFondazioniPct / allocSum);
+  const aDonationsEsgShare = cDonationsNetPool * (inp.cQuotaDonazioniAziendeEsgPct / allocSum);
+  const cScholarshipsFunded = Math.floor(cDonationsCommunityShare / Math.max(1, inp.cValoreBorsaEur));
 
   const cCallAppsAnnual = inp.cReturningMau * inp.cVisiteAnnuePerMau * (inp.cCtrCallPct / 100);
   const cFeaturedCallsRev = inp.cFeaturedCalls24m * inp.cFeaturedCallPrezzoEur;
@@ -1803,59 +2408,30 @@ export function runSimulation(inp: SimulatorInputs): SimulationResult {
   const cArchiveExitArr = cArchiveLicensesY2 * inp.cArchivePrezzoAnnuoEur;
   const cArchiveRev24m = cArchiveRevY1 + cArchiveExitArr;
   const cArchiveCogs = cArchiveRev24m * (inp.cArchiveCogsPct / 100);
-  const cStartupCash = cArchiveRev24m + cFeaturedCallsRev + cStartupFee;
+
+  const contestDirectRevenue24m = cContestRegistrationRev + cContestLicensesRev + cStartupDonationFee;
+  const cStartupCash = cArchiveRev24m + cFeaturedCallsRev + contestDirectRevenue24m;
 
   // --- 5. TECNOLOGIA & WHITE-LABEL ---
   const tProjectsCount = inp.tCommesseSottosoglia24m + inp.tCommesseEnterprise24m;
   const tProjRev = inp.tCommesseSottosoglia24m * inp.tPrezzoSottosogliaEur + inp.tCommesseEnterprise24m * inp.tPrezzoEnterpriseEur;
-  const tSaasRev = inp.tCommesseY1AttiveSaas * inp.tCanoneSaasAnnuoEur;
+  const tY1ProjectsEstimated = Math.round(tProjectsCount * (inp.quotaRicaviAnno1Pct / 100));
+  const tSaasEligibleCount = Math.round(tY1ProjectsEstimated * (inp.tRinnovoSaasY2Pct / 100));
+  const tSaasRev = tSaasEligibleCount * inp.tCanoneSaasAnnuoEur;
   const tRev24m = tProjRev + tSaasRev;
   const tProjCogs = tProjRev * (inp.tCostoMarginaleProduzionePct / 100);
-  const tSaasCogs = tSaasRev * 0.15;
+  const tSaasCogs = tSaasRev * (inp.tCogsSaasPct / 100);
   const tContribMarginEur = tProjRev - tProjCogs;
   const tContribMarginPct = tProjRev > 0 ? (tContribMarginEur / tProjRev) * 100 : 0;
   const tAvoidedCapexNet = Math.max(0, tProjectsCount * inp.tCapexAlternativoClienteEur - tProjRev);
 
-  // --- 6. AUDIENCE DEDUPLICATA, VIRALITA' LIBERA & CAC DERIVATO ---
-  const grossReach =
-    inp.fDbEntiContattiTot +
-    inp.aCultCrmContattiTot +
-    inp.iReachPropriaIstituzione +
-    inp.iReachStartupIncrementale +
-    inp.iCopieStampaEsposte +
-    inp.tAccessiGratuitiTerritorio +
-    inp.tAccessiBookingStartup +
-    inp.cCommunitySemiOrganici * 5;
-  const uniqueReach = grossReach * overlapFactor;
+  // --- 6. P&L CONSOLIDATO STARTUP & DSO DUALE ---
+  const fStartupCash = fRevB2G + fTourismCommStartup;
+  const totalRevenueCash24m = fStartupCash + aStartupCash + cStartupCash + tRev24m;
 
-  const primaryReaders =
-    fDbDeepReaders +
-    aCultDeepReaders +
-    iOpenedReaders +
-    iPrintDeepReaders +
-    inp.tAccessiGratuitiTerritorio * 0.25 +
-    inp.cCommunitySemiOrganici;
-
-  const decay = 1 - inp.decadimentoViralePct / 100;
-  const w1 = inp.kViralita;
-  const w2 = w1 * (inp.kViralita * decay);
-  const w3 = w2 * (inp.kViralita * decay * decay);
-  const effectiveKNet = w1 + w2 + w3;
-  const viralMultiplier = 1 + effectiveKNet;
-  const viralAddedReaders = primaryReaders * effectiveKNet;
-  const totalActiveReaders = primaryReaders * viralMultiplier;
-
-  const directCacEur = totalActiveReaders > 0 ? inp.costiDistribuzioneSeeding24m / totalActiveReaders : 0;
-  const fullyLoadedCacEur =
-    totalActiveReaders > 0 ? (inp.costiDistribuzioneSeeding24m + inp.costiSalesAbm24m) / totalActiveReaders : 0;
-
-  const zeroPartyProfiles = totalActiveReaders * 0.85 * (inp.aSurveyCompletionPct / 100) * (inp.aGdprOptInPct / 100);
-
-  // --- 7. CONTO ECONOMICO CONSOLIDATO & WORKING CAPITAL DSO ---
-  const totalRevenueCash24m = fStartupCash + aStartupCash + iDbMonetizedStartup + cStartupCash + tRev24m;
   const y1Share = inp.quotaRicaviAnno1Pct / 100;
   const revenueY1Cash = totalRevenueCash24m * y1Share;
-  const revenueY2Cash = totalRevenueCash24m * (1 - y1Share);
+  const revenueY2Cash = totalRevenueCash24m - revenueY1Cash;
 
   const totalCogsCash24m =
     fCogsB2G +
@@ -1863,8 +2439,8 @@ export function runSimulation(inp: SimulatorInputs): SimulationResult {
     aCogsCult +
     aTechCashCogs +
     iStartupProdCost +
-    iDbMonetizedCogs +
-    inp.cCostiCommunityOps24m +
+    cContestDirectCogs +
+    inp.cCostiCuratelaBandi24m +
     cArchiveCogs +
     tProjCogs +
     tSaasCogs;
@@ -1879,8 +2455,9 @@ export function runSimulation(inp: SimulatorInputs): SimulationResult {
     inp.costiDistribuzioneSeeding24m +
     inp.costiGaCdnGdpr24m;
 
-  // Ripartizione realistica costi fissi Y1 (~58% per Capex iniziale) vs Y2 (~42%)
-  const fixedY1 = inp.capexPiattaforma24m * 0.75 + (fixedAndGtmCosts24m - inp.capexPiattaforma24m) * 0.48;
+  const capexY1 = inp.capexPiattaforma24m * (inp.quotaCapexAnno1Pct / 100);
+  const opexY1 = (fixedAndGtmCosts24m - inp.capexPiattaforma24m) * (inp.quotaOpexFissiAnno1Pct / 100);
+  const fixedY1 = capexY1 + opexY1;
   const fixedY2 = fixedAndGtmCosts24m - fixedY1;
   const cogsY1 = totalCogsCash24m * y1Share;
   const cogsY2 = totalCogsCash24m - cogsY1;
@@ -1891,16 +2468,18 @@ export function runSimulation(inp: SimulatorInputs): SimulationResult {
   const ebitdaMarginPct = totalRevenueCash24m > 0 ? (ebitda24m / totalRevenueCash24m) * 100 : 0;
   const breakEvenRevenue24m = grossMarginPct > 0 ? fixedAndGtmCosts24m / (grossMarginPct / 100) : 0;
 
-  // Crediti da incassare fine Anno 1 sui ricavi B2G/Enti (DSO)
-  const b2gY1Share = fRevB2G * y1Share;
-  const receivablesEndY1FromDso = b2gY1Share * Math.min(1, inp.dsoGiorniIncassoB2G / 365);
+  // DSO Duale: PA/B2G (Fondazioni + Archive Y1 + White-Label Y1) vs B2B Privato (Aziende Y1)
+  const b2gY1Volume = fRevB2G * y1Share + cArchiveRevY1 + tProjRev * y1Share;
+  const b2bY1Volume = aStartupCash * y1Share;
+  const receivablesEndY1FromDso =
+    b2gY1Volume * Math.min(1, inp.dsoGiorniIncassoB2G / 365) + b2bY1Volume * Math.min(1, inp.dsoGiorniIncassoB2B / 365);
   const peakCashNeedY1 = Math.max(0, -(ebitdaY1 - receivablesEndY1FromDso));
 
   const revenueMix = [
-    { id: "fondazioni" as StakeholderId, label: "Fondazioni & Turismo (comm.)", value: fStartupCash, color: "#D4C7A6" },
-    { id: "aziende" as StakeholderId, label: "Aziende (Cultural + Tech Cash)", value: aStartupCash, color: "#A43A46" },
-    { id: "istituzioni" as StakeholderId, label: "DB Istituzioni (monetizzato)", value: iDbMonetizedStartup, color: "#E8E4CF" },
-    { id: "community" as StakeholderId, label: "Archive 4.1 + Calls 4.3 + Fee", value: cStartupCash, color: "#8E9B8D" },
+    { id: "fondazioni" as StakeholderId, label: "Fondazioni, Comuni & Turismo", value: fStartupCash, color: "#D4C7A6" },
+    { id: "aziende" as StakeholderId, label: "Aziende (Sponsor + DB/Trailer)", value: aStartupCash, color: "#A43A46" },
+    { id: "istituzioni" as StakeholderId, label: "Istituzioni (Traffico & Halo · €0 fee)", value: 0, color: "#E8E4CF" },
+    { id: "community" as StakeholderId, label: "Contest Trailer + Archive 4.1 + Bandi", value: cStartupCash, color: "#8E9B8D" },
     { id: "tecnologia" as StakeholderId, label: "Tecnologia & White-Label", value: tRev24m, color: "#E36F5A" },
   ];
 
@@ -1908,119 +2487,137 @@ export function runSimulation(inp: SimulatorInputs): SimulationResult {
   const fFormulas: FormulaTrace[] = [
     {
       id: "f-b2g",
-      label: "Ricavi B2B/B2G Fondazioni & Enti",
-      formulaSymbolic: "(F1 × P1) + (F2 × P2) + (F3 × P3)",
-      formulaLive: `(${inp.f1Contratti24m}×${fEur(inp.f1PrezzoEur)}) + (${inp.f2Contratti24m}×${fEur(inp.f2PrezzoEur)}) + (${inp.f3Contratti24m}×${fEur(inp.f3PrezzoEur)}) = ${fEur(fRevB2G)} (ACV ${fEur(fAcv)})`,
-      explanation: "Distingue i 3 pacchetti B2G/B2B: ogni ente acquista licenze personalizzate + adozione scolastica/territoriale come bene culturale.",
+      label: "Contratti B2B/B2G → Licenze, Scuole di Danza & Comuni",
+      formulaSymbolic: "Licenze = Contratti × Licenze_Medie | Scuole_Danza = Contratti × Scuole_Medie",
+      formulaLive: `${fContractsTot} enti contrattualizzati (${fEur(fRevB2G)}, ACV ${fEur(fAcv)}) → ${fInt(fLicensesIssued)} licenze distribuite · ${fSchoolsTot} scuole di danza (${fClassesTot} gruppi)`,
+      explanation:
+        "Fondazioni bancarie/d'impresa e Comuni acquistano pacchetti di licenze (es. 100-500 per Comune) per promuovere spettacoli, contest e scuole di danza sul territorio. Con 0 contratti non si attiva alcun flusso B2G.",
     },
     {
-      id: "f-tour-ist",
-      label: "Turismo 4.4 → Attribuzione Istituzioni (Non Monetizzabile dalla Startup)",
-      formulaSymbolic: "Accessi_Gratuiti × Estensione% × Giorni_Extra × Spesa_Giornaliera",
-      formulaLive: `${fInt(inp.tAccessiGratuitiTerritorio)} × ${inp.tEstensioneSoggiornoPct}% × ${fDec(inp.tGiorniExtraMedi, 1)} gg = ${fInt(fTourismExtraDays)} giornate presenza → ${fEur(fTourismSpillover)} indotto`,
-      explanation: "La fruizione gratuita nei borghi e info-point non genera ricavo diretto Startup ma produce giornate di presenza aggiuntive e indotto per il territorio e le istituzioni locali.",
+      id: "f-tour-split",
+      label: "Turismo 4.4 → Presenze Istituzioni vs Commissioni Startup (0%–80%+)",
+      formulaSymbolic: "Istituzioni: Accessi_Grat × Est% × Gg × Spesa | Startup: Accessi_Book × Conv% × € × Comm%",
+      formulaLive: `Istituzioni: ${fInt(fTourismExtraDays)} gg presenza (${fEur(fTourismSpillover)} indotto) | Startup: ${fEur(fTourismGmv)} GMV × ${inp.tCommissioneStartupPct}% = ${fEur(fTourismCommStartup)}`,
+      explanation:
+        "La parte gratuita nei borghi va alle Istituzioni in giornate di presenza; le prenotazioni generate da contenuti Startup pagano la commissione variabile (0%-80%+). Il DB Festival contribuisce fino a " +
+        fInt(iDbTrafficToTourism) +
+        " ingressi qualificati.",
     },
     {
-      id: "f-tour-comm",
-      label: "Turismo 4.4 → Attribuzione Startup (Commissioni Variabili 0%–80%+)",
-      formulaSymbolic: "Accessi_Booking × Conv% × Scontrino × Commissione%",
-      formulaLive: `${fInt(inp.tAccessiBookingStartup)} × ${inp.tConvBookingPct}% × ${fEur(inp.tScontrinoMedioServizioEur)} = ${fEur(fTourismGmv)} GMV × ${inp.tCommissioneStartupPct}% = ${fEur(fTourismCommStartup)} Startup`,
-      explanation: "Quando il viaggiatore prenota pernottamenti, visite o servizi organizzati tramite un contenuto digitale Startup, questa trattiene la commissione variabile (da 0% fino all'80% nei servizi organizzati in proprio).",
+      id: "f-donazioni",
+      label: "Quota 'Vota Donando' destinata a Progetti Territoriali Enti",
+      formulaSymbolic: "Fondo_Netto_Donazioni × Quota_Fondazioni%",
+      formulaLive: `${fEur(cDonationsNetPool)} netti × ${inp.cQuotaDonazioniFondazioniPct}% (normalizzato) = ${fEur(fDonationsShare)} co-finanziamento civico`,
+      explanation:
+        "I cittadini e le famiglie che votano donando nei contest comunali co-finanziano progetti culturali/scolastici sostenuti da Comuni o Fondazioni.",
     },
   ];
 
   const aFormulas: FormulaTrace[] = [
     {
-      id: "a-spons",
-      label: "Cultural + Tech Sponsorship (Cash vs Barter Separato)",
-      formulaSymbolic: "Cult_Cash + Tech_Lordo × (1 − Barter%)",
-      formulaLive: `${fEur(aCultCash)} + ${fEur(aTechGross)} × ${100 - inp.aTechBarterPct}% = ${fEur(aStartupCash)} cash (+ ${fEur(aBarter)} barter a riduzione COGS)`,
-      explanation: "Il barter tecnico non viene sommato ai ricavi cash ma riduce il costo di produzione video/luce solo fino a concorrenza del COGS tecnico.",
+      id: "a-basi",
+      label: "Le 3 Basi Dati Sponsor: CRM Proprio + Pool Cross-Sponsor + DB Startup",
+      formulaSymbolic: "CRM_Proprio (Retention/Loyalty) | Pool_Cross + DB_Startup + Opera/Trailer (Acquisizione)",
+      formulaLive: `CRM Proprio: ${fInt(aCrmProprioTot)} | Pool Cross-Sponsor orchestrato: ${fInt(aCrossPoolContacts)} | DB Proprietario Startup: ${fInt(aStartupDbContacts)} (+ ${fInt(aExposedOperaAndTrailer)} Opera/Trailer)`,
+      explanation:
+        "Su CRM proprio si misura Loyalty/Crisis; sui contatti nuovi portati da Pool Cross-Sponsor (tra più aziende) e dal DB selezionato dalla Startup (default 20.000/azienda) + Opera/Trailer si calcolano i nuovi Lead e i nuovi Clienti.",
     },
     {
-      id: "a-leads",
-      label: "Valore Lead B2B Reale (SQL) vs Fiere",
-      formulaSymbolic: "Partner × Lead × SQL% × CPL_Fiera | CPL_Effettivo = Tech_Lordo / SQL",
-      formulaLive: `${aLeadsTot} lead × ${inp.aSqlRatePct}% = ${fInt(aSqlCount)} SQL × ${fEur(inp.aCplFieraComparabileEur)} = ${fEur(aFairEquivValue)} (costo effettivo/SQL sponsor: ${fEur(aBrandEffectiveCplSql)})`,
-      explanation: "Sostituisce il fuorviante 'CPL €18' del sito mostrando il vero costo per lead qualificato (SQL) sostenuto dallo sponsor rispetto a una fiera.",
+      id: "a-clv-lead",
+      label: "Lead Reali da Audience & Valore CLV Duale (€500 B2C / €2.500 B2B Tech)",
+      formulaSymbolic: "Lead = Lettori_Nuovi_Esposti × Lead% | Valore_CLV = (Clienti_B2C × CLV_B2C) + (Clienti_B2B × CLV_B2B)",
+      formulaLive: `${fInt(aNewBrandReadersFromDbAndOpera)} lettori esposti × ${inp.aTassoLeadSuLettoriNuoviPct}% = ${fInt(aLeadsGeneratedFromAudience)} lead (CPL ${fEur(aBrandEffectiveCpl)}) → ${fDec(aB2cCustomers, 1)} cl. B2C (€${inp.aClvB2cEur}) + ${fDec(aB2bCustomers, 1)} cl. B2B (€${inp.aClvB2bTechEur}) = ${fEur(aClvValueNewCustomers)}`,
+      explanation:
+        "I lead non sono più un numero fisso da fiera (22): nascono direttamente dai lettori reali del DB Startup, del Pool Cross-Sponsor, dell'Opera e dei Trailer Contest, moltiplicati per il CLV reale B2C e B2B.",
     },
     {
-      id: "a-loyalty",
-      label: "Engagement Strategico Impresa (Popup Loyalty / Crisis)",
-      formulaSymbolic: "Lettori_CRM × Click_Popup% × Conv_Obiettivo% × Valore_Obiettivo",
-      formulaLive: `${fInt(aCultDeepReaders)} × ${inp.aClickPopupImportantePct}% × ${inp.aConvObiettivoBrandPct}% × ${fEur(inp.aValoreObiettivoBrandEur)} = ${fEur(aBrandGoalsValue)} (${fInt(aBrandGoalsCount)} obiettivi)`,
-      explanation: "Misura il valore di micro-interazioni importanti (es. spiegazione sostenibilità, qualità o gestione crisi) per le imprese private.",
+      id: "a-retention",
+      label: "Valore Loyalty & Crisis su CRM Proprio Sponsor via CLV",
+      formulaSymbolic: "Clienti_CRM_Trattenuti × CLV_Medio × Quota_CLV_Salvata%",
+      formulaLive: `${fInt(aBrandEventsRead)} interazioni Loyalty/Crisis → ${fDec(aRetentionCustomers, 1)} clienti trattenuti × ${fEur(aBlendedClv)} × ${inp.aQuotaClvSalvataRetentionPct}% = ${fEur(aRetentionClvValue)}`,
+      explanation:
+        "Ancora il valore di Brand Loyalty e Crisis Management direttamente al Customer Lifetime Value aziendale invece che a cifre arbitrarie.",
     },
   ];
 
   const iFormulas: FormulaTrace[] = [
     {
       id: "i-reach",
-      label: "Doppia Diffusione: DB Istituzione (0 CPM) vs Reach Startup (€ CPM)",
-      formulaSymbolic: "Valore_Media_Incr = (Reach_Startup × (1 − Overlap%)) / 1.000 × CPM_Culturale",
-      formulaLive: `DB Ente: ${fInt(inp.iReachPropriaIstituzione)} (€0 CPM fittizio) | Startup Incr.: ${fInt(iReachStartupDedup)} / 1.000 × ${fEur(inp.cpmCulturaleEur)} = ${fEur(iCpmMediaValue)}`,
-      explanation: "Nessun CPM fittizio sui contatti che l'Istituzione già possiede. Il CPM culturale (default €90) valuta solo i contatti diversi portati dalla Startup.",
+      label: "DB Istituzione (0 CPM, no doppio conteggio) vs Reach Nuova Startup (€90 CPM)",
+      formulaSymbolic: "Reach_Incr × Overlap × CPM | Traffico DB verso 4.4 Turismo & 3.2 Contest",
+      formulaLive: `DB Ente: ${fInt(inp.iReachPropriaIstituzione)} (0 CPM; indirizza ${fInt(iDbTrafficToTourism)} a Turismo e ${fInt(iDbTrafficToContest)} a Contest) | Reach Startup: ${fInt(iReachStartupDedup)} × €${inp.cpmCulturaleEur} CPM = ${fEur(iCpmMediaValue)}`,
+      explanation:
+        "Nessuna licenza duplicata è contata sui contatti del DB Istituzione (le licenze sono già pagate a monte). Il DB genera traffico reale verso gli altri imbuti + Halo Effect.",
     },
     {
-      id: "i-db-startup",
-      label: "Benefici Startup dal DB Istituzione (Monetizzabile + Halo Effect)",
-      formulaSymbolic: "Ricavo_DB = Reach_Ente × Conv_Azioni% × Valore_Azione | Halo = +Autorevolezza%",
-      formulaLive: `${fInt(inp.iReachPropriaIstituzione)} × ${inp.iConvDbIstituzioneAzioniStartupPct}% × ${fEur(inp.iValoreMedioAzioneMonetizzataEur)} = ${fEur(iDbMonetizedStartup)} (+${inp.iMoltiplicatoreAutorevolezzaPct}% spinta su altre Istituzioni)`,
-      explanation: "Essere presentati dal DB di una grande Istituzione permette alla Startup sia di convertire azioni monetizzabili, sia soprattutto di acquisire credibilità per coinvolgere altre Istituzioni.",
+      id: "i-halo",
+      label: "Autorevolezza Istituzionale (Halo Effect) & Pipeline B2B",
+      formulaSymbolic: "Deal_Origine × (1 + Halo%) × Valore_Deal",
+      formulaLive: `${iPipelineContacts} contatti × ${inp.iConvPipelineIstituzioniPct}% × (1 + ${inp.iMoltiplicatoreAutorevolezzaPct}%) = ${fDec(iPipelineDealsWithHalo, 1)} deal (${fEur(iPipelineValueEstimated)} pipeline separata)`,
+      explanation:
+        "Essere legittimati dal DB di una grande Istituzione moltiplica la credibilità della Startup nel coinvolgere altre Istituzioni e partner.",
     },
     {
       id: "i-engage",
-      label: "Valore Engagement Obiettivo ('Lettura di qualcosa di importante')",
-      formulaSymbolic: "(Esposti × Apertura% × Click_Popup% × Conv_Obiettivo% × Valore_Unit) + Progetto_Discreto",
-      formulaLive: `${fInt(iImportantClicks)} click critici → ${fInt(iEngagementConversions)} conv. × ${fEur(inp.iValoreObiettivoIstituzioneEur)} + ${fEur(inp.iValoreProgettoSpecialeFissoEur)} = ${fEur(iEngagementGoalValue)}`,
-      explanation: "Il valore dell'engagement non è fisso: dipende dall'obiettivo dell'Istituzione (brand loyalty, crisis management, oppure invito conferenza stampa fundraising da €100.000).",
+      label: "Engagement Obiettivo (Micro Loyalty €30 vs Macro Progetti €100k)",
+      formulaSymbolic: "(Click_Importanti × Conv_Micro% × V_Micro) + (Macro_Progetti × V_Macro)",
+      formulaLive: `${fInt(iImportantClicks)} click critici → ${fInt(iMicroConversions)} micro-conv. × ${fEur(inp.iValoreMicroObiettivoIstituzioneEur)} + ${inp.iMacroProgettiFinanziatiCount} macro × ${fEur(inp.iValoreMacroProgettoEur)} = ${fEur(iEngagementGoalValue)}`,
+      explanation:
+        "Evita l'errore di moltiplicare migliaia di click per un ticket alto: distingue micro-loyalty su abbonati e grandi progetti discreti finanziati (es. €100.000 da conferenza stampa).",
     },
   ];
 
   const cFormulas: FormulaTrace[] = [
     {
-      id: "c-borse",
-      label: "Fondo Borse 3.2 ('Dona con il Voto' Realistico)",
-      formulaSymbolic: "(Tappe × Voti × Donanti% × Donazione) × (1 − Gateway% − Fee_Startup%)",
-      formulaLive: `${fInt(cTotalVotes)} voti × ${inp.cTassoDonantiSuVotantiPct}% = ${fInt(cDonors)} donanti × ${fDec(inp.cDonazioneMediaEur, 2)}€ = ${fEur(cGrossDonations)} → ${fEur(cNetScholarshipPool)} netti (${cScholarshipsFunded} borse)`,
-      explanation: "Corregge l'assunzione irreale del sito (100% votanti paganti) introducendo la quota reale di donanti e l'eventuale fee di piattaforma.",
+      id: "c-contest",
+      label: "Motore Contest Online Trailer: Compagnie + Scuole × Studenti × K_contest",
+      formulaSymbolic: "K_contest = Inviti × Conv% | Votanti = Studenti × K_contest × (1 − Overlap%)",
+      formulaLive: `${cContestParticipants} realtà (${inp.cCompagnieContest} comp. + ${inp.cScuoleContest} scuole) = ${fInt(cStudentsTot)} studenti × K=${fDec(cContestK, 2)} → ${fInt(cContestVoters)} spettatori/votanti trailer`,
+      explanation:
+        "La viralità e l'audience dei contest derivano dal numero reale di compagnie/scuole di danza, allievi in gara e inviti ad amici/familiari.",
     },
     {
-      id: "c-archive",
-      label: "Living Archive 4.1 (Cumulato Cash 24M vs Exit ARR)",
-      formulaSymbolic: "Cash_24M = (Lic_Y1 × P) + ((Lic_Y1×Rinnovo% + Nuove_Y2) × P)",
-      formulaLive: `Y1: ${fEur(cArchiveRevY1)} (${inp.cArchiveLicenzeY1} lic.) + Y2: ${fEur(cArchiveExitArr)} (${cArchiveLicensesY2} lic.) = ${fEur(cArchiveRev24m)} Cash 24M (Exit ARR: ${fEur(cArchiveExitArr)})`,
-      explanation: "Separa i flussi di cassa dei due anni dall'ARR di fine periodo, evitando di sommare l'ARR a ricavi biennali.",
+      id: "c-rev",
+      label: "3 Monetizzazioni Contest + 'Vota Donando' + Living Archive 4.1",
+      formulaSymbolic: "Iscrizioni + Licenze_Concorso + Fee_Donazioni + Archive_24M + Calls",
+      formulaLive: `Iscr. ${fEur(cContestRegistrationRev)} + Lic. (${cContestLicensesCount}×€${inp.cPrezzoLicenzaConcorsoEur}) ${fEur(cContestLicensesRev)} + Vota Donando ${fEur(cDonationsCommunityShare)} a Community (${cScholarshipsFunded} borse) | Archive ${fEur(cArchiveRev24m)} (Exit ARR ${fEur(cArchiveExitArr)})`,
+      explanation:
+        "Esplicita tutte le linee reali di ricavo contest, i costi variabili per partecipante (" +
+        fEur(cContestDirectCogs) +
+        ") e distingue i fondi etici delle donazioni dalle entrate Startup.",
     },
   ];
 
   const tFormulas: FormulaTrace[] = [
     {
       id: "t-wl",
-      label: "Commesse White-Label + SaaS & Margine Netto",
-      formulaSymbolic: "(N_Sprint×P_s + N_Ent×P_e) × (1 − CostoMarg%) + SaaS_Y2",
-      formulaLive: `${fEur(tProjRev)} × ${100 - inp.tCostoMarginaleProduzionePct}% = ${fEur(tContribMarginEur)} margine progetti + ${fEur(tSaasRev)} SaaS`,
-      explanation: "Riconcilia le due fasce (sottosoglia vs enterprise) includendo PM/Account nei costi marginali e confrontando il risparmio del cliente contro un CMS reale.",
+      label: "Commesse White-Label + SaaS Collegato a Y1 & Margine Netto",
+      formulaSymbolic: "(Sprint×Ps + Ent×Pe) × (1 − CostoMarg%) + (Commesse_Y1 × Rinnovo% × SaaS)",
+      formulaLive: `${fEur(tProjRev)} progetti (${tProjectsCount} ed.) × ${100 - inp.tCostoMarginaleProduzionePct}% = ${fEur(tContribMarginEur)} + ${fEur(tSaasRev)} SaaS (${tSaasEligibleCount} attive in Y2)`,
+      explanation:
+        "Il canone SaaS Anno 2 nasce solo dalle commesse effettivamente consegnate in Anno 1.",
     },
   ];
 
   const audFormulas: FormulaTrace[] = [
     {
-      id: "aud-viral",
-      label: "Viralità Libera (K-factor Input) & CAC Derivato",
-      formulaSymbolic: "Lettori_Tot = Semi_Primari × (1 + w1 + w2 + w3) | CAC = Spesa / Lettori_Tot",
-      formulaLive: `${fInt(primaryReaders)} primari × ${fDec(viralMultiplier, 2)}x (K=${fDec(inp.kViralita, 2)}) = ${fInt(totalActiveReaders)} lettori → CAC diretto €${fDec(directCacEur, 2)} | Fully-Loaded €${fDec(fullyLoadedCacEur, 2)}`,
-      explanation: "Il CAC non è mai fisso: cambia dinamicamente al variare di K (anche 0 o 2) e dei costi effettivi sostenuti.",
+      id: "aud-tot",
+      label: "Audience Unificata Omogenea (Contest Trailer + Opera + DB Aziende) & CAC",
+      formulaSymbolic: "(Primari_Opera × Molt_K_Opera) + Lettori_CRM_Sponsor + Lettori_DB_Startup",
+      formulaLive: `${fInt(primaryOperaReaders)} primari × ${fDec(viralMultiplier, 2)}x + ${fInt(aCrmProprioReaders + aNewReadersFromStartupDbAndPool)} DB aziendali = ${fInt(totalActiveReaders)} lettori → CAC diretto €${fDec(directCacEur, 2)} | Fully-Loaded €${fDec(fullyLoadedCacEur, 2)}`,
+      explanation:
+        "Tutti i canali usano la definizione omogenea di Lettore Attivo (>4 min). Il CAC è sempre derivato dai costi sostenuti diviso l'audience reale.",
     },
   ];
 
   const pnlFormulas: FormulaTrace[] = [
     {
-      id: "pnl-ebitda",
-      label: "EBITDA 24 Mesi & Fabbisogno Cassa Anno 1 (con DSO)",
-      formulaSymbolic: "EBITDA = Ricavi_Cash − COGS_Netti − Costi_Fissi_GTM | Picco_Cassa_Y1 = max(0, −(EBITDA_Y1 − Crediti_DSO))",
-      formulaLive: `${fEur(totalRevenueCash24m)} − ${fEur(totalCogsCash24m)} − ${fEur(fixedAndGtmCosts24m)} = ${fEur(ebitda24m)} | Crediti DSO Y1: ${fEur(receivablesEndY1FromDso)}`,
-      explanation: "Mostra se il modello si sostiene davvero tenendo conto dei costi fissi redazionali/tech e dei ritardi d'incasso da enti pubblici.",
+      id: "pnl-tot",
+      label: "EBITDA 24M & Picco Fabbisogno Cassa Anno 1 (DSO Duale B2G + B2B)",
+      formulaSymbolic: "EBITDA = Ricavi_Cash − COGS_Netti − Costi_Fissi | Crediti_DSO = B2G_Y1×(DSO_PA/365) + B2B_Y1×(DSO_B2B/365)",
+      formulaLive: `${fEur(totalRevenueCash24m)} − ${fEur(totalCogsCash24m)} − ${fEur(fixedAndGtmCosts24m)} = ${fEur(ebitda24m)} | Crediti Y1: ${fEur(receivablesEndY1FromDso)} → Picco Cassa Y1: ${fEur(peakCashNeedY1)}`,
+      explanation:
+        "Integra DSO pubblico su Fondazioni/Comuni/Atenei/Musei e DSO privato sulle Aziende per calcolare la reale cassa necessaria in Anno 1.",
     },
   ];
 
@@ -2028,71 +2625,71 @@ export function runSimulation(inp: SimulatorInputs): SimulationResult {
     fondazioni: {
       id: "fondazioni",
       startupMonetaryEur: fStartupCash,
-      startupMonetaryDetail: `${fEur(fRevB2G)} licenze B2B/B2G + ${fEur(fTourismCommStartup)} commissioni turismo (${inp.tCommissioneStartupPct}%)`,
+      startupMonetaryDetail: `${fEur(fRevB2G)} licenze B2B/B2G (${fContractsTot} enti) + ${fEur(fTourismCommStartup)} commissioni turismo (${inp.tCommissioneStartupPct}%)`,
       startupNonMonetary: [
-        `${fInt(fDbDeepReaders)} lettori profondi dai DB di enti e comuni`,
-        `${fInt(fContractsTot)} contratti istituzionali a legittimazione del progetto`,
+        `${fInt(fLicensesIssued)} licenze distribuite tramite Comuni/Fondazioni (${fInt(fDbDeepReaders)} lettori profondi)`,
+        `${fSchoolsTot} scuole di danza e realtà territoriali collegate ai contratti`,
       ],
-      stakeholderMonetaryEur: fStakeholderMonetary,
-      stakeholderMonetaryDetail: `${fEur(fAvoidedCapex)} costi portali/didattica evitati + ${fEur(fTourismSpillover)} indotto presenze + ${fEur(fTourismNetOperators)} netto operatori ricettivi`,
+      stakeholderMonetaryEur: fStakeholderMonetary(fAvoidedCapex, fTourismSpillover, fTourismNetOperators, fDonationsShare),
+      stakeholderMonetaryDetail: `${fEur(fAvoidedCapex)} portali/progetti evitati + ${fEur(fTourismSpillover)} indotto presenze + ${fEur(fTourismNetOperators)} netto ricettività + ${fEur(fDonationsShare)} quota Vota Donando`,
       stakeholderNonMonetary: [
-        `${fInt(fTourismExtraDays)} giornate di presenza turistica aggiuntive stimate`,
-        `${fInt(inp.fIstitutiAttivati)} istituti (${fInt(fClasses)} classi) al ${inp.fCompletamentoDidatticoPct}% completamento`,
+        `${fInt(fTourismExtraDays)} giornate presenza extra nei Comuni/borghi`,
+        `${fSchoolsTot} scuole di danza (${fClassesTot} gruppi) al ${inp.fCompletamentoDidatticoPct}% completamento`,
       ],
       formulas: fFormulas,
     },
     aziende: {
       id: "aziende",
       startupMonetaryEur: aStartupCash,
-      startupMonetaryDetail: `${fEur(aCultCash)} Cultural + ${fEur(aTechCash)} Tech cash (oltre a ${fEur(aBarter)} barter a riduzione COGS)`,
+      startupMonetaryDetail: `${fEur(aCultCash)} Cultural + ${fEur(aTechCash)} Tech cash (+ ${fEur(aBarter)} barter COGS${aTrailerAddonCash > 0 ? ` + ${fEur(aTrailerAddonCash)} trailer extra` : "; trailer inclusi in licenza"})`,
       startupNonMonetary: [
-        `${fInt(zeroPartyProfiles)} profili Zero-Party Data GDPR utilizzabili`,
-        `${fInt(aCultDeepReaders)} lettori profondi provenienti dai CRM aziendali`,
+        `${fInt(zeroPartyProfiles)} profili Zero-Party Data GDPR + pool cross-sponsor ${fInt(aCrossPoolContacts)}`,
+        `${fInt(aStartupDbContacts)} contatti DB Startup segmentati per ${aTotalCompanies} aziende`,
       ],
-      stakeholderMonetaryEur: aFairEquivValue + aResearchValue + aBrandGoalsValue,
-      stakeholderMonetaryDetail: `${fEur(aFairEquivValue)} valore SQL vs fiere + ${fEur(aResearchValue)} ricerche evitate + ${fEur(aBrandGoalsValue)} valore obiettivi Loyalty/Crisis`,
+      stakeholderMonetaryEur: aClvValueNewCustomers + aRetentionClvValue + aResearchValue + aDonationsEsgShare,
+      stakeholderMonetaryDetail: `${fEur(aClvValueNewCustomers)} nuovi clienti CLV (€${inp.aClvB2cEur}/€${inp.aClvB2bTechEur}) + ${fEur(aRetentionClvValue)} Loyalty/Crisis CLV + ${fEur(aResearchValue)} ricerche (${fEur(aLeadsEquivValue)} valore lead)`,
       stakeholderNonMonetary: [
-        `${fInt(aBrandEventsRead)} letture di popup strategici (Loyalty / Crisis / Prodotto)`,
-        `${fInt(aSqlCount)} trattative SQL B2B (costo effettivo sponsor ${fEur(aBrandEffectiveCplSql)}/SQL)`,
+        `${fInt(aLeadsGeneratedFromAudience)} lead reali generati da audience Startup (CPL effettivo ${fEur(aBrandEffectiveCpl)})`,
+        `${fInt(aBrandEventsRead)} interazioni critiche Loyalty/Crisis su CRM proprio + visibilità su ${fInt(cContestVoters)} spettatori trailer`,
       ],
       formulas: aFormulas,
     },
     istituzioni: {
       id: "istituzioni",
-      startupMonetaryEur: iDbMonetizedStartup,
-      startupMonetaryDetail: `${fEur(iDbMonetizedStartup)} azioni monetizzate da DB Ente + ${fEur(iPipelineValueEstimated)} pipeline B2B originata (separata) − ${fEur(iStartupProdCost)} costi prod.`,
+      startupMonetaryEur: 0,
+      startupMonetaryDetail: `€0 ricavi diretti/duplicati (costo Startup speciale+stampa: ${fEur(iStartupProdCost)}); ${fEur(iPipelineValueEstimated)} pipeline separata`,
       startupNonMonetary: [
         `+${inp.iMoltiplicatoreAutorevolezzaPct}% Halo Effect / autorevolezza per coinvolgere altre Istituzioni`,
-        `${fInt(iPrintDeepReaders)} nuovi lettori da QR stampa + ${fInt(iPressClippingsTot)} riprese media`,
+        `DB Ente porta ${fInt(iDbTrafficToTourism)} ingressi a Turismo 4.4 e ${fInt(iDbTrafficToContest)} a Contest 3.2`,
       ],
       stakeholderMonetaryEur: iCpmMediaValue + iAvoidedProdCost + iEngagementGoalValue,
-      stakeholderMonetaryDetail: `${fEur(iCpmMediaValue)} valore media incrementale (${fEur(inp.cpmCulturaleEur)} CPM) + ${fEur(iAvoidedProdCost)} costi prod. evitati + ${fEur(iEngagementGoalValue)} obiettivi`,
+      stakeholderMonetaryDetail: `${fEur(iCpmMediaValue)} reach incrementale Startup (${fEur(inp.cpmCulturaleEur)} CPM) + ${fEur(iAvoidedProdCost)} prod. evitati + ${fEur(iEngagementGoalValue)} obiettivi`,
       stakeholderNonMonetary: [
-        `${fInt(iImportantClicks)} interazioni critiche ('ha fatto X / non ha fatto Y' — Loyalty/Crisis/Invito)`,
-        `${fInt(iEngagementConversions)} conversioni obiettivo + ${inp.iRispostaIstituzionalePct}% risposta istituzionale Pagina Bianca`,
+        `${fInt(iImportantClicks)} interazioni importanti ('ha fatto X / non ha fatto Y' — Loyalty/Crisis/Conf. Stampa)`,
+        `${fInt(iPressClippingsTot)} riprese stampa (${inp.iRispostaIstituzionalePct}% risposta Pagina Bianca)`,
       ],
       formulas: iFormulas,
     },
     community: {
       id: "community",
       startupMonetaryEur: cStartupCash,
-      startupMonetaryDetail: `${fEur(cArchiveRev24m)} Living Archive 4.1 (Exit ARR ${fEur(cArchiveExitArr)}) + ${fEur(cFeaturedCallsRev)} Featured Calls + ${fEur(cStartupFee)} fee`,
+      startupMonetaryDetail: `Contest ${fEur(cContestRegistrationRev)} iscr. + ${fEur(cContestLicensesRev)} lic. + ${fEur(cStartupDonationFee)} fee | Archive 4.1 ${fEur(cArchiveRev24m)} (ARR ${fEur(cArchiveExitArr)}) + Calls ${fEur(cFeaturedCallsRev)}`,
       startupNonMonetary: [
-        `${fInt(inp.cReturningMau)} professionisti di ritorno al mese (MAU) su bandi & audizioni`,
-        `${inp.cRitenzioneSerialePct}% ritenzione seriale e serbatoio semi organici (${fInt(inp.cCommunitySemiOrganici)})`,
+        `${cContestParticipants} compagnie/scuole (${fInt(cStudentsTot)} studenti) → K_contest = ${fDec(cContestK, 2)} (${fInt(cContestVoters)} spettatori)`,
+        `${fInt(inp.cReturningMau)} MAU su portale bandi & ${inp.cRitenzioneSerialePct}% ritenzione seriale`,
       ],
-      stakeholderMonetaryEur: cNetScholarshipPool,
-      stakeholderMonetaryDetail: `${fEur(cNetScholarshipPool)} erogati alle borse di studio (${cScholarshipsFunded} borse da ${fEur(inp.cValoreBorsaEur)})`,
+      stakeholderMonetaryEur: cDonationsCommunityShare,
+      stakeholderMonetaryDetail: `${fEur(cDonationsCommunityShare)} netti da 'Vota Donando' + 'Sblocca €2' (${cScholarshipsFunded} borse/premi da ${fEur(inp.cValoreBorsaEur)})`,
       stakeholderNonMonetary: [
-        `${fInt(cTotalVotes)} voti e mobilitazione territoriale su ${inp.cTappe24m} tappe`,
-        `${fInt(cCallAppsAnnual)} candidature stimate/anno a bandi, residenze e audizioni`,
+        `${fInt(cContestVoters)} spettatori/votanti mobili su trailer di scuole e compagnie`,
+        `${fInt(cCallAppsAnnual)} candidature/anno generate su bandi, residenze e audizioni`,
       ],
       formulas: cFormulas,
     },
     tecnologia: {
       id: "tecnologia",
       startupMonetaryEur: tRev24m,
-      startupMonetaryDetail: `${fEur(tProjRev)} progetti (${tProjectsCount} edizioni) + ${fEur(tSaasRev)} SaaS Y2 | Margine contribuzione ${fDec(tContribMarginPct, 1)}%`,
+      startupMonetaryDetail: `${fEur(tProjRev)} progetti (${tProjectsCount} ed.) + ${fEur(tSaasRev)} SaaS Y2 (${tSaasEligibleCount} attive) | Margine ${fDec(tContribMarginPct, 1)}%`,
       startupNonMonetary: [
         `Ammortamento Capex piattaforma L0 (€${fInt(inp.capexPiattaforma24m)})`,
         `~${inp.tQuotaLeadPlgBadgePct}% nuova pipeline inbound da badge 'Powered by'`,
@@ -2101,40 +2698,66 @@ export function runSimulation(inp: SimulatorInputs): SimulationResult {
       stakeholderMonetaryDetail: `Risparmio netto reale di ${fEur(tAvoidedCapexNet)} rispetto a sviluppo CMS/agenzia (${fEur(inp.tCapexAlternativoClienteEur)}/progetto)`,
       stakeholderNonMonetary: [
         `Consegna in ${inp.tSettimaneConsegna} settimane (vs ${inp.tSettimaneCustomExNovo} settimane sviluppo ex novo)`,
-        `Stack analytics, referral e Zero-Party Data GDPR nativi chiavi in mano`,
+        `Piattaforma integrata con quiz Zero-Party Data GDPR e moduli contest`,
       ],
       formulas: tFormulas,
     },
     raw: {
       fRevB2G,
+      fContractsTot,
+      fLicensesIssued,
+      fLocalReachFromContracts,
+      fSchoolsTot,
+      fClassesTot,
       fTourismGmv,
       fTourismCommStartup,
       fTourismNetOperators,
       fTourismExtraDays,
       fTourismSpillover,
-      fClasses,
       fAvoidedCapex,
+      fDonationsShare,
       aCultCash,
       aTechCash,
+      aTrailerAddonCash,
       aBarter,
-      aLeadsTot,
-      aSqlCount,
-      aBrandEffectiveCplSql,
-      aBrandEventsRead,
-      aBrandGoalsValue,
+      aTotalCompanies,
+      aCrmProprioTot,
+      aCrossPoolContacts,
+      aStartupDbContacts,
+      aTotalNewReachForBrands,
+      aNewBrandReadersFromDbAndOpera,
+      aLeadsGeneratedFromAudience,
+      aB2cCustomers,
+      aB2bCustomers,
+      aClvValueNewCustomers,
+      aRetentionClvValue,
+      aLeadsEquivValue,
+      aBrandEffectiveCpl,
+      aDonationsEsgShare,
       iReachStartupDedup,
       iCpmMediaValue,
       iAvoidedProdCost,
-      iDbMonetizedStartup,
+      iDbTrafficToTourism,
+      iDbTrafficToContest,
       iPipelineValueEstimated,
       iImportantClicks,
+      iMicroConversions,
       iEngagementGoalValue,
       iPrintQrScans,
-      cTotalVotes,
-      cDonors,
-      cGrossDonations,
-      cStartupFee,
-      cNetScholarshipPool,
+      cContestParticipants,
+      cStudentsTot,
+      cContestK,
+      cContestVoters,
+      cContestRegistrationRev,
+      cContestLicensesCount,
+      cContestLicensesRev,
+      cContestDirectCogs,
+      cVotaDonandoContestGross,
+      cSbloccaDonandoReaderGross,
+      cTotalDonationsGross,
+      cStartupDonationFee,
+      cDonationsNetPool,
+      cDonationsCommunityShare,
       cScholarshipsFunded,
       cCallAppsAnnual,
       cFeaturedCallsRev,
@@ -2142,6 +2765,7 @@ export function runSimulation(inp: SimulatorInputs): SimulationResult {
       cArchiveExitArr,
       cArchiveRev24m,
       tProjectsCount,
+      tSaasEligibleCount,
       tRev24m,
       tContribMarginEur,
       tContribMarginPct,
@@ -2153,10 +2777,12 @@ export function runSimulation(inp: SimulatorInputs): SimulationResult {
     audience: {
       grossReach,
       uniqueReach,
-      primaryReaders,
+      contestStudentsTot: cStudentsTot,
+      contestKFactor: cContestK,
+      contestViewersVoters: cContestVoters,
+      primaryReaders: primaryOperaReaders,
       viralMultiplier,
       effectiveKNet,
-      viralAddedReaders,
       totalActiveReaders,
       directCacEur,
       fullyLoadedCacEur,
@@ -2168,9 +2794,10 @@ export function runSimulation(inp: SimulatorInputs): SimulationResult {
       revenueY2Cash,
       totalRevenueCash24m,
       tourismCommissionRevenue24m: fTourismCommStartup,
-      institutionDbMonetized24m: iDbMonetizedStartup,
+      contestDirectRevenue24m,
+      votaDonandoGross24m: cTotalDonationsGross,
+      votaDonandoNetToStakeholders24m: cDonationsNetPool,
       barterValue24m: aBarter,
-      passThroughScholarshipFund24m: cNetScholarshipPool,
       totalCogsCash24m,
       grossProfitCash24m,
       grossMarginPct,
@@ -2187,4 +2814,8 @@ export function runSimulation(inp: SimulatorInputs): SimulationResult {
     },
     stakeholders,
   };
+}
+
+function fStakeholderMonetary(avoidedCapex: number, spillover: number, netOp: number, donations: number) {
+  return avoidedCapex + spillover + netOp + donations;
 }

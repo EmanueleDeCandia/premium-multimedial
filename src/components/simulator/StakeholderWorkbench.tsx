@@ -20,46 +20,55 @@ interface UseCaseScenario {
 const STAKEHOLDER_GROUPS: Record<StakeholderId, { headlineNote: string; useCases: UseCaseScenario[]; groups: InputGroup[] }> = {
   fondazioni: {
     headlineNote:
-      "Qui separiamo tre catene distinte: (1) l'acquisto diretto di beni culturali e kit PCTO (3.1, 3.3-B2G, 4.2); (2) la fruizione turistica gratuita sul territorio (attribuita a Istituzioni/DMO come giornate di presenza); (3) le prenotazioni generate dai contenuti Startup su cui si applicano commissioni variabili (0%–80%+).",
+      "Chiarimento strutturale v2: le Scuole coinvolte sono Scuole e Accademie di Danza; Fondazioni (bancarie o d'impresa) ed Enti Pubblici (Comuni/Regioni) acquistano pacchetti di licenze (es. 100–500 licenze per Comune) e le distribuiscono per promuovere spettacoli, contest e realtà locali. Con 0 contratti non si attiva alcun flusso B2G. Il Turismo 4.4 separa le giornate di presenza gratuite (Istituzioni) dalle commissioni 0%–80%+ (Startup).",
     useCases: [
       {
-        label: "DMO / Borghi (Comm. 15% ricettività)",
-        description: "Imposta commissione standard 15% su pernottamenti/esperienze e impatto presenze gratuito nei borghi.",
-        patch: { tCommissioneStartupPct: 15, tAccessiGratuitiTerritorio: 24000, tAccessiBookingStartup: 18000, tConvBookingPct: 10 },
+        label: "Comuni & Fondazioni (100-500 licenze) + Turismo 15%",
+        description: "Default realistico: 17 enti contrattualizzati che distribuiscono licenze locali + commissione ricettività 15%.",
+        patch: { tCommissioneStartupPct: 15, fLicenzeMediePerEnte: 450, tAccessiGratuitiTerritorio: 24000, tAccessiBookingStartup: 18000 },
       },
       {
         label: "Servizi organizzati Startup (Comm. 80%)",
-        description: "Simula pacchetti/esperienze culturali organizzati direttamente dalla Startup con commissione dell'80% sul prezzo.",
+        description: "Simula esperienze/pacchetti turistici organizzati direttamente dalla Startup con commissione dell'80%.",
         patch: { tCommissioneStartupPct: 80, tAccessiBookingStartup: 12000, tConvBookingPct: 12, tScontrinoMedioServizioEur: 75 },
       },
       {
-        label: "Solo Istituzionale B2G (Comm. 0%)",
-        description: "Azzera le commissioni turistiche per valutare la sola sostenibilità delle licenze B2G e scuole.",
-        patch: { tCommissioneStartupPct: 0, f1Contratti24m: 14, f2Contratti24m: 4 },
+        label: "Co-finanziamento Civico 'Vota Donando' (50% Enti)",
+        description: "Destina il 50% del fondo netto Vota Donando a progetti culturali territoriali sostenuti da Comuni/Fondazioni.",
+        patch: { cQuotaDonazioniCommunityPct: 50, cQuotaDonazioniFondazioniPct: 50, cQuotaDonazioniAziendeEsgPct: 0 },
       },
     ],
     groups: [
       {
-        title: "1A · Acquisto B2B/B2G, Edizioni Territoriali & COGS (3.1, 3.3-B2G)",
-        subtitle: "Pacchetti di licenze digitali personalizzate e accordi regionali con costi variabili espliciti.",
+        title: "1A · Contratti B2B/B2G Fondazioni & Comuni (3.1, 3.3-B2G)",
+        subtitle: "Acquisto di pacchetti di licenze come bene culturale per promuovere spettacoli e contest territoriali.",
         auditSummary:
-          "Assunzione chiave: riconcilia il piano 'Istituzionale' (€9.800) con l'ACV medio (€12.500 sul sito) tramite i tier F2 Territoriale e F3 Regionale. Il DSO pubblico determina i crediti in attesa d'incasso.",
+          "Assunzione chiave: riconcilia il piano 'Istituzionale' (€9.800) e gli acquisti comunali minori (es. 100 licenze) tramite il mix F1/F2/F3.",
         fields: ["f1Contratti24m", "f1PrezzoEur", "f2Contratti24m", "f2PrezzoEur", "f3Contratti24m", "f3PrezzoEur", "fCogsPct", "fCapexEvitatoPerEnteEur"],
       },
       {
-        title: "1B · DB Cittadini & Kit Didattico Scuole (4.2)",
-        subtitle: "Conversioni sui database/portali dell'ente e adozioni scolastiche PCTO.",
+        title: "1B · Distribuzione Licenze Enti & Scuole di Danza Locali (4.2)",
+        subtitle: "Deriva direttamente dal numero di Fondazioni e Comuni contrattualizzati (0 contratti = 0 attivazioni).",
         auditSummary:
-          "Assunzione chiave: sul DB cittadini di Comuni e Fondazioni il riscatto effettivo è più conservativo (5%-12%) rispetto all'open rate; i licei coreutici italiani sono ~50, quindi volumi superiori richiedono scuole generaliste via bandi.",
-        fields: ["fDbEntiContattiTot", "fDbRedemptionPct", "fDbLetturaProfondaPct", "fIstitutiAttivati", "fClassiPerIstituto", "fCompletamentoDidatticoPct"],
+          "Correzione v2: elimina l'origine astratta dei 'DB enti'. Ogni Comune/Fondazione distribuisce le licenze acquistate (es. 100-500 copie) sui propri canali spettacoli/contest e sostiene scuole di danza locali.",
+        fields: [
+          "fLicenzeMediePerEnte",
+          "fContattiCanaliLocaliPerEnte",
+          "fRedemptionEntiPct",
+          "fLetturaProfondaEntiPct",
+          "fScuoleDanzaPerEnte",
+          "fClassiGruppiPerScuola",
+          "fCompletamentoDidatticoPct",
+        ],
       },
       {
-        title: "1C · Turismo 4.4 — Doppia Attribuzione: Presenze Istituzioni vs Commissioni Startup",
-        subtitle: "Distingue l'impatto pubblico territoriale (non monetizzabile) dal ricavo transazionale Startup (commissioni 0%–80%+).",
+        title: "1C · Turismo 4.4 — Presenze Istituzioni vs Commissioni Startup (0%–80%+)",
+        subtitle: "Separa la fruizione gratuita nei borghi (giornate di presenza per Enti) dalle prenotazioni monetizzate dalla Startup.",
         auditSummary:
-          "Correzione critica: l'indicatore generico 'accessi turistici' è stato sdoppiato. Chi fruisce gratuitamente produce giornate di presenza extra per le Istituzioni; chi prenota tramite contenuti Startup genera GMV e commissioni (0%-80%+) per la Startup.",
+          "Correzione critica: l'indotto da presenze è attribuito alle Istituzioni; le commissioni variabili (0%-80%+) sui servizi prenotati tramite contenuti Startup vanno ai ricavi Startup.",
         fields: [
           "tAccessiGratuitiTerritorio",
+          "tTurismoLetturaProfondaPct",
           "tEstensioneSoggiornoPct",
           "tGiorniExtraMedi",
           "tSpesaGiornalieraTerritorioEur",
@@ -67,62 +76,84 @@ const STAKEHOLDER_GROUPS: Record<StakeholderId, { headlineNote: string; useCases
           "tConvBookingPct",
           "tScontrinoMedioServizioEur",
           "tCommissioneStartupPct",
+          "tCogsGestioneBookingPct",
         ],
       },
     ],
   },
   aziende: {
     headlineNote:
-      "Per le imprese private separiamo i ricavi cash dal barter tecnico (usato solo a copertura dei costi di produzione video 4K), calcoliamo il vero costo per lead qualificato (SQL) sostenuto dallo sponsor e introduciamo gli indicatori di Engagement Strategico (Brand Loyalty & Crisis Management) finora assenti sul sito.",
+      "Architettura v2 per Aziende e Brand: distingue 3 basi di contatti reali — (1) CRM proprio dell'azienda (per Retention, Loyalty e Crisis Management); (2) Pool Cross-Sponsor orchestrato dalla Startup tra le basi di più aziende; (3) Database Proprietario selezionato dalla Startup (default 20.000/azienda) + lettori Opera e Trailer Contest. Valuta Lead, Clienti e Retention tramite CLV separato (€500 B2C e €2.500 B2B Tech).",
     useCases: [
       {
-        label: "Brand Loyalty & Educazione Prodotto",
-        description: "Focus su popup interattivi di brand loyalty nei capitoli sostenuti (valore obiettivo €150/cliente fidelizzato).",
-        patch: { aClickPopupImportantePct: 28, aConvObiettivoBrandPct: 12, aValoreObiettivoBrandEur: 150 },
+        label: "10 Sponsor · Pool Cross-DB (200k) + DB Startup (200k)",
+        description: "Simula il caso di 10 aziende sponsor con 20k contatti propri ciascuna + 20k selezionati dalla Startup per azienda.",
+        patch: {
+          aCultContratti24m: 5,
+          aTechContratti24m: 5,
+          aCrmProprioPerAzienda: 20000,
+          aQuotaScambioCrossSponsorPct: 100,
+          aDbProprioStartupPerAzienda: 20000,
+        },
       },
       {
-        label: "Crisis Management / Reputazione",
-        description: "Simula un'azienda che usa un dossier d'autore multimediale per chiarire un tema critico e trattenere clienti chiave (€450/obiettivo).",
-        patch: { aClickPopupImportantePct: 35, aConvObiettivoBrandPct: 15, aValoreObiettivoBrandEur: 450 },
+        label: "Focus Brand Loyalty & Crisis Management (CLV €500)",
+        description: "Valorizza la difesa della customer base su CRM proprio tramite popup strategici e CLV B2C €500.",
+        patch: { aClickLoyaltyCrisisPct: 35, aConvRetentionLoyaltyPct: 15, aQuotaClvSalvataRetentionPct: 45, aClvB2cEur: 500 },
       },
       {
-        label: "Tech Showcase Filiera B2B",
-        description: "Simula aziende tech/sport/materiali che puntano su lead qualificati (SQL) e zero barter.",
-        patch: { aTechContratti24m: 7, aTechTicketLordoEur: 18000, aTechBarterPct: 0, aLeadPerTechPartner: 26, aSqlRatePct: 35 },
+        label: "Focus Filiera Tech B2B (CLV €2.500)",
+        description: "Simula fornitori tecnici (pavimenti, luci, audio) rivolti a teatri e scuole con CLV B2B €2.500 e slot trailer extra.",
+        patch: { aTechContratti24m: 7, aTechTicketLordoEur: 18000, aClvB2bTechEur: 2500, aSponsorTrailerAutonomi: 4, aPrezzoSponsorTrailerEur: 3500 },
       },
     ],
     groups: [
       {
-        title: "2A · Cultural Sponsorship & Distribuzione CRM Aziendale (3.3-B2B)",
-        subtitle: "Capitoli tematici d'autore distribuiti come omaggio culturale al CRM del brand.",
+        title: "2A · Pacchetti Cultural, Tech Showcase & Sponsorizzazione Trailer Contest",
+        subtitle: "Ricavi cash, barter tecnico reale (solo riduzione COGS) e chiarezza sui Trailer dei Contest.",
         auditSummary:
-          "Assunzione chiave: i contatti CRM appartengono all'azienda (zero CPM fittizio). Il beneficio nasce dal tasso reale di lettura profonda (>4 min) e dalla raccolta Zero-Party Data.",
-        fields: ["aCultContratti24m", "aCultPrezzoEur", "aCogsCultPct", "aCultCrmContattiTot", "aCultRedemptionPct", "aCultLetturaProfondaPct"],
-      },
-      {
-        title: "2B · Tech Showcase B2B, Barter & Qualificazione Lead SQL (4.5)",
-        subtitle: "Sponsorizzazioni tecniche con separazione Cash/Barter e calcolo trasparente del costo per SQL.",
-        auditSummary:
-          "Correzione critica: elimina l'ambiguità del 'CPL €18' e del barter sommato al fatturato. Qui vedi sia il cash netto Startup sia il reale costo per lead qualificato sostenuto dallo sponsor rispetto a una fiera.",
+          "Nota di trasparenza: la sponsorizzazione dei Trailer Contest rientra normalmente nel costo della licenza/pacchetto sponsor (quindi senza doppio conteggio); usa i campi extra solo se vendi slot trailer separati.",
         fields: [
+          "aCultContratti24m",
+          "aCultPrezzoEur",
+          "aCogsCultPct",
           "aTechContratti24m",
           "aTechTicketLordoEur",
           "aTechBarterPct",
           "aCogsTechLordoPct",
-          "aLeadPerTechPartner",
-          "aSqlRatePct",
-          "aCplFieraComparabileEur",
+          "aSponsorTrailerAutonomi",
+          "aPrezzoSponsorTrailerEur",
         ],
       },
       {
-        title: "2C · Engagement Strategico Impresa (Loyalty / Crisis) & Zero-Party Data (4.6)",
-        subtitle: "Micro-interazioni tracciabili su popup video/schede critiche e raccolta dati consensati GDPR.",
+        title: "2B · Le 3 Basi Dati: CRM Proprio, Pool Cross-Sponsor & DB Proprietario Startup",
+        subtitle: "Base di calcolo trasparente che risolve l'errore dei '22 lead' sconnessi dall'audience reale.",
         auditSummary:
-          "Novità del simulatore: le imprese ottengono finalmente un indicatore dedicato per misurare quanti utenti leggono qualcosa di strategico (brand loyalty o crisis management) e convertono verso l'obiettivo aziendale.",
+          "Con 10 sponsor da 20.000 contatti si forma un pool da 200.000 contatti orchestrato dalla Startup, a cui si sommano 20.000 contatti/azienda selezionati dal DB proprietario Startup + audience Opera e Trailer Contest.",
         fields: [
-          "aClickPopupImportantePct",
-          "aConvObiettivoBrandPct",
-          "aValoreObiettivoBrandEur",
+          "aCrmProprioPerAzienda",
+          "aQuotaScambioCrossSponsorPct",
+          "aDbProprioStartupPerAzienda",
+          "aQuotaAudienceOperaEspostaPct",
+          "aRedemptionCrmProprioPct",
+          "aAperturaNuoviContattiStartupPct",
+        ],
+      },
+      {
+        title: "2C · Lead Reali, Loyalty/Crisis, Zero-Party Data & CLV Duale (€500 / €2.500)",
+        subtitle: "Calcola nuovi clienti acquisiti e retention su CRM proprio usando CLV B2C (€500) e CLV B2B Tech (€2.500).",
+        auditSummary:
+          "Ogni lead deriva dall'audience effettivamente esposta e converte in clienti valorizzati con il rispettivo Customer Lifetime Value.",
+        fields: [
+          "aTassoLeadSuLettoriNuoviPct",
+          "aTassoChiusuraVenditaB2cPct",
+          "aTassoChiusuraVenditaB2bPct",
+          "aClvB2cEur",
+          "aClvB2bTechEur",
+          "aCplComparabileMercatoEur",
+          "aClickLoyaltyCrisisPct",
+          "aConvRetentionLoyaltyPct",
+          "aQuotaClvSalvataRetentionPct",
           "aSurveyCompletionPct",
           "aGdprOptInPct",
           "aValoreRicercaEvitataBrandEur",
@@ -132,48 +163,30 @@ const STAKEHOLDER_GROUPS: Record<StakeholderId, { headlineNote: string; useCases
   },
   istituzioni: {
     headlineNote:
-      "Modello completamente revisionato: (1) zero CPM fittizio sui contatti già posseduti dall'Istituzione, che generano però per la Startup sia azioni monetizzabili sia un enorme beneficio non monetario di Autorevolezza per coinvolgere altre Istituzioni; (2) CPM culturale (default €90) applicato SOLO ai contatti diversi raggiunti dalla Startup; (3) valore dell'Engagement determinato dall'Obiettivo finale (Loyalty, Crisis Management o Conferenza Stampa Fundraising).",
+      "Modello v2 senza doppi conteggi: nessun CPM fittizio sui contatti dell'Istituzione, nessuna vendita di ulteriori licenze conteggiata sulle spedizioni di licenze già pagate. Il DB Istituzione porta traffico qualificato verso Turismo 4.4 e Contest 3.2 + Autorevolezza (Halo Effect). Engagement diviso in micro-obiettivi (es. €30 loyalty) e macro-obiettivi discreti (es. €100.000 conferenza stampa).",
     useCases: [
       {
-        label: "Festival Standard (Loyalty & CPM €90)",
-        description: "Default realistico: DB proprio ente + 80k contatti nuovi Startup a €90 CPM + azioni monetizzabili da DB ente.",
-        patch: {
-          iReachPropriaIstituzione: 240000,
-          iReachStartupIncrementale: 80000,
-          cpmCulturaleEur: 90,
-          iValoreObiettivoIstituzioneEur: 350,
-          iValoreProgettoSpecialeFissoEur: 0,
-        },
+        label: "Festival Standard (Loyalty €30 & CPM €90)",
+        description: "DB ente a 0 CPM + 80k contatti nuovi Startup a €90 CPM + micro-loyalty abbonati.",
+        patch: { iReachPropriaIstituzione: 240000, iReachStartupIncrementale: 80000, cpmCulturaleEur: 90, iMacroProgettiFinanziatiCount: 0, iValoreMicroObiettivoIstituzioneEur: 30 },
       },
       {
-        label: "Conferenza Stampa Fundraising (€100k)",
-        description: "Simula una campagna istituzionale (con K=2) che porta privati a finanziare un progetto da €100.000.",
-        patch: {
-          kViralita: 2.0,
-          iClickEventoImportantePct: 35,
-          iConvObiettivoIstituzionePct: 8,
-          iValoreObiettivoIstituzioneEur: 250,
-          iValoreProgettoSpecialeFissoEur: 100000,
-        },
+        label: "Conferenza Stampa Fundraising (€100k, K=2)",
+        description: "Simula 1 progetto privato da €100.000 finanziato grazie all'invito virale (K=2) sui contenuti interattivi.",
+        patch: { kViralitaOpera: 2.0, iMacroProgettiFinanziatiCount: 1, iValoreMacroProgettoEur: 100000, iClickEventoImportantePct: 35 },
       },
       {
         label: "Crisis Management Istituzionale",
-        description: "Focus sull'interazione critica ('cosa l'ente ha fatto / non ha fatto'): 40% click su popup di chiarimento.",
-        patch: {
-          iAperturaContenutoPct: 26,
-          iClickEventoImportantePct: 40,
-          iConvObiettivoIstituzionePct: 12,
-          iValoreObiettivoIstituzioneEur: 600,
-          iValoreProgettoSpecialeFissoEur: 0,
-        },
+        description: "Focus su popup critici ('cosa ha fatto / non ha fatto l'Istituzione') per tutela reputazionale.",
+        patch: { iClickEventoImportantePct: 40, iConvMicroObiettivoIstituzionePct: 12, iValoreMicroObiettivoIstituzioneEur: 85, iMacroProgettiFinanziatiCount: 0 },
       },
     ],
     groups: [
       {
         title: "3A · Doppia Diffusione: DB Istituzione (0 CPM) vs Reach Incrementale Startup (€90 CPM)",
-        subtitle: "Separa i contatti già posseduti dall'ente dai contatti nuovi portati dalla Startup ed esplicita il costo Startup.",
+        subtitle: "Separa audience già posseduta dall'ente e nuova reach portata dalla Startup, esplicitando il costo Startup.",
         auditSummary:
-          "Correzione critica (Esempio 1): nessun CPM sull'audience dell'ente. Sulle audience diverse pubblicate dalla Startup si applica il CPM culturale editabile (default €90). Qui calcoliamo anche il costo diretto della Startup dietro il 'costo zero per l'ente'.",
+          "Correzione v2: eliminate azioni monetizzate duplicate sulle licenze già pagate. Il DB dell'Istituzione genera traffico verso Turismo 4.4 e Contest 3.2, oltre all'Halo Effect.",
         fields: [
           "iSpeciali24m",
           "iReachPropriaIstituzione",
@@ -181,16 +194,8 @@ const STAKEHOLDER_GROUPS: Record<StakeholderId, { headlineNote: string; useCases
           "cpmCulturaleEur",
           "iCostoProdEvitatoEnteEur",
           "iCostoDirettoStartupSpecialeEur",
-        ],
-      },
-      {
-        title: "3B · Valore del DB Istituzione per la Startup (Monetizzabile + Halo Effect)",
-        subtitle: "Misura quanto vale per una startup emergente essere presentata dal database di una grande Istituzione.",
-        auditSummary:
-          "Duplice ritorno per la Startup: (a) invita il pubblico dell'ente ad azioni monetizzabili (donazioni, acquisti, prenotazioni); (b) acquisisce autorevolezza per sbloccare e coinvolgere altre Istituzioni.",
-        fields: [
-          "iConvDbIstituzioneAzioniStartupPct",
-          "iValoreMedioAzioneMonetizzataEur",
+          "iQuotaDbVersoTurismoPct",
+          "iQuotaDbVersoContestPct",
           "iMoltiplicatoreAutorevolezzaPct",
           "iContattiB2BOriginePerSpeciale",
           "iConvPipelineIstituzioniPct",
@@ -198,16 +203,18 @@ const STAKEHOLDER_GROUPS: Record<StakeholderId, { headlineNote: string; useCases
         ],
       },
       {
-        title: "3C · Engagement Obiettivo ('Lettura di qualcosa di importante') & Stampa/Inchieste (3.5, 3.6)",
-        subtitle: "Valuta l'impatto su popup video Loyalty/Crisis/Fundraising e ricalibra la stampa phygital.",
+        title: "3B · Engagement Interattivo ('Lettura di qualcosa di importante') & Stampa/Inchieste",
+        subtitle: "Distingue micro-obiettivi (Loyalty/Abbonati) da macro-obiettivi discreti (es. progetto €100k), con lettura attiva omogenea.",
         auditSummary:
-          "Il valore dell'engagement non dipende da una tariffa fissa ma dall'obiettivo dell'Istituzione (incluso un eventuale progetto finanziato da €100.000). Sulla stampa, il QR realistico passa dal 14% al ~2%.",
+          "Correzione v2: aggiunge iLetturaProfondaSuAperturaPct per allineare il calcolo dei Lettori Attivi a tutti gli altri canali ed evita l'inflazione da moltiplicazione su grandi numeri.",
         fields: [
           "iAperturaContenutoPct",
+          "iLetturaProfondaSuAperturaPct",
           "iClickEventoImportantePct",
-          "iConvObiettivoIstituzionePct",
-          "iValoreObiettivoIstituzioneEur",
-          "iValoreProgettoSpecialeFissoEur",
+          "iConvMicroObiettivoIstituzionePct",
+          "iValoreMicroObiettivoIstituzioneEur",
+          "iMacroProgettiFinanziatiCount",
+          "iValoreMacroProgettoEur",
           "iCopieStampaEsposte",
           "iQrScanPct",
           "iStampaLetturaProfondaPct",
@@ -221,81 +228,112 @@ const STAKEHOLDER_GROUPS: Record<StakeholderId, { headlineNote: string; useCases
   },
   community: {
     headlineNote:
-      "Distingue tre piani diversi: (1) la Community gratuita che vota e consulta i bandi; (2) la raccolta fondi borse di studio con tasso realistico di donanti tra i votanti ed eventuale fee di servizio; (3) il prodotto B2B Living Archive 4.1 venduto ad atenei e biblioteche con separazione tra Cash 24M ed Exit ARR.",
+      "Cuore operativo v2: modella i Contest Online con Trailer in cui gareggiano Compagnie di Danza e Scuole di Danza (con studenti, inviti e K_contest reale = Inviti × Conv%), le 3 linee di monetizzazione (Iscrizione, Licenze Concorso, Vota Donando + Sblocca €2 ripartite tra Community 80% / Fondazioni 20% / Aziende ESG 0% / Fee Startup 0%), più costi variabili per partecipante, Bandi 4.3 e Living Archive 4.1.",
     useCases: [
       {
-        label: "Modello Etico (0% fee borse + Archive B2B)",
-        description: "La Startup non trattiene commissioni sulle borse (solo costi gateway 2,5%) e monetizza tramite Archive 4.1 e Featured Calls.",
-        patch: { cFeeGestioneStartupPct: 0, cTassoDonantiSuVotantiPct: 10, cArchivePrezzoAnnuoEur: 1600 },
+        label: "Modello Core Contest (80% Comm. / 20% Enti / 0% fee)",
+        description: "25 Compagnie + 60 Scuole di Danza, iscrizione €120, licenze concorso €35, 0% fee su Vota Donando.",
+        patch: { cPrezzoIscrizioneCompagniaEur: 120, cPrezzoIscrizioneScuolaEur: 120, cFeeGestioneStartupDonazioniPct: 0, cQuotaDonazioniCommunityPct: 80, cQuotaDonazioniFondazioniPct: 20 },
       },
       {
-        label: "Platform Fee 10% su Crowdfunding Borse",
-        description: "Simula il trattenimento di una fee di gestione organizzativa del 10% sui fondi raccolti.",
-        patch: { cFeeGestioneStartupPct: 10, cTassoDonantiSuVotantiPct: 14, cDonazioneMediaEur: 4 },
+        label: "Contest Freemium (Iscrizione €0 + Focus Licenze & Fee 10%)",
+        description: "Partecipazione gratuita per massimizzare scuole iscritte, monetizzando con licenze multimediali e fee 10% su donazioni.",
+        patch: { cCompagnieContest: 40, cScuoleContest: 100, cPrezzoIscrizioneCompagniaEur: 0, cPrezzoIscrizioneScuolaEur: 0, cFeeGestioneStartupDonazioniPct: 10, cLicenzeMediePerPartecipante: 9 },
       },
     ],
     groups: [
       {
-        title: "4A · Contest Territoriali & Borse di Studio ('Dona con il Voto', 3.2)",
-        subtitle: "Distingue i voti gratuiti dai donatori effettivi, i costi gateway e l'eventuale fee Startup.",
+        title: "4A · Motore Core: Contest Online con Trailer (Compagnie & Scuole di Danza)",
+        subtitle: "Partecipanti, studenti in gara, viralità reale (Inviti × Conv%), iscrizioni, licenze concorso e costi variabili.",
         auditSummary:
-          "Correzione critica: sul sito 48.000 voti generavano 48 borse assumendo €1 pagato su ogni singolo voto (100% conversione). Qui il tasso donanti è una variabile libera (default 10%).",
+          "Novità v2: sostituisce i numeri piatti della v1 con il vero imbuto dei tornei trailer online. I votanti generati alimentano anche l'audience dell'opera e l'esposizione per le Aziende Sponsor.",
         fields: [
           "cTappe24m",
-          "cVotiPerTappa",
-          "cTassoDonantiSuVotantiPct",
-          "cDonazioneMediaEur",
-          "cFeeGestioneStartupPct",
-          "cCostoGatewayPct",
-          "cValoreBorsaEur",
+          "cCompagnieContest",
+          "cScuoleContest",
+          "cStudentiPerCompagnia",
+          "cStudentiPerScuola",
+          "cPrezzoIscrizioneCompagniaEur",
+          "cPrezzoIscrizioneScuolaEur",
+          "cLicenzeMediePerPartecipante",
+          "cPrezzoLicenzaConcorsoEur",
+          "cInvitiMediPerStudente",
+          "cConvInvitiContestPct",
+          "cSovrapposizioneContestPct",
+          "cQuotaSpettatoriLettoriOperaPct",
+          "cCostoVariabilePerPartecipanteEur",
+          "cCostoFissoPerTappaGiuriaEur",
           "cRitenzioneSerialePct",
-          "cCommunitySemiOrganici",
         ],
       },
       {
-        title: "4B · Portale Bandi & Audizioni (4.3)",
-        subtitle: "Monetizzazione lato domanda (teatri/residenze che cercano talenti) lasciando gratis l'accesso ai danzatori.",
+        title: "4B · Flusso 'Vota Donando' + 'Sblocca Donando €2' (Attribuzione Multi-Stakeholder)",
+        subtitle: "Ripartizione trasparente tra Community Danza (80%), Fondazioni/Comuni (20%), Aziende ESG (0%) ed eventuale Fee Startup.",
         auditSummary:
-          "Esplicita il denominatore tra Returning MAU (2.800 realistici vs 9.500 sito), sessioni annuali e candidature, oltre ai costi operativi di curatela.",
-        fields: ["cReturningMau", "cVisiteAnnuePerMau", "cCtrCallPct", "cFeaturedCalls24m", "cFeaturedCallPrezzoEur", "cCostiCommunityOps24m"],
+          "Unisce le donazioni dei votanti nei contest con lo sblocco alternativo del Director's Cut (€2) nel Reader, allocando il netto senza doppi conteggi.",
+        fields: [
+          "cTassoDonantiSuVotantiPct",
+          "cDonazioneMediaVotoEur",
+          "cTassoSbloccaDonandoReaderPct",
+          "cImportoSbloccaDonandoEur",
+          "cCostoGatewayPct",
+          "cFeeGestioneStartupDonazioniPct",
+          "cQuotaDonazioniCommunityPct",
+          "cQuotaDonazioniFondazioniPct",
+          "cQuotaDonazioniAziendeEsgPct",
+          "cValoreBorsaEur",
+        ],
       },
       {
-        title: "4C · Living Archive B2B (4.1 — Università, Biblioteche, Conservatori)",
-        subtitle: "Flusso ricorrente B2B con distinzione rigorosa tra Ricavo Cash 24M ed Exit ARR Anno 2.",
+        title: "4C · Portale Bandi (4.3) & Living Archive B2B (4.1)",
+        subtitle: "Featured Calls lato domanda e abbonamenti annuali per Università/Biblioteche (Cash 24M vs Exit ARR).",
         auditSummary:
-          "Correzione critica: il prezzo viene calibrato sui budget reali degli atenei italiani (€1.200–€1.800/anno anziché €3.000) e i ricavi dei due anni sono separati dal valore Exit ARR.",
-        fields: ["cArchiveLicenzeY1", "cArchiveNuoveY2", "cArchiveRinnovoPct", "cArchivePrezzoAnnuoEur", "cArchiveCogsPct"],
+          "Distingue chiaramente i ricavi ricorrenti B2B degli atenei dall'accesso gratuito dei danzatori.",
+        fields: [
+          "cReturningMau",
+          "cVisiteAnnuePerMau",
+          "cCtrCallPct",
+          "cFeaturedCalls24m",
+          "cFeaturedCallPrezzoEur",
+          "cCostiCuratelaBandi24m",
+          "cArchiveLicenzeY1",
+          "cArchiveNuoveY2",
+          "cArchiveRinnovoPct",
+          "cArchivePrezzoAnnuoEur",
+          "cArchiveCogsPct",
+        ],
       },
     ],
   },
   tecnologia: {
     headlineNote:
-      "Riconcilia la discrepanza di fattore 2× del sito tra €180.000, 8 commesse e listino 'da €45.000', separando le commesse sottosoglia PA/musei da quelle enterprise, imputando il costo di PM/Account nei margini (55% netto vs 62% lordo) e confrontando il risparmio del cliente su un'alternativa reale (€40k).",
+      "Modello v2 coerente: il canone SaaS Anno 2 deriva automaticamente dalle commesse consegnate in Anno 1 (zero canoni fantasma con 0 progetti), il costo marginale include PM/Account (45%) e il risparmio del committente si misura contro un'alternativa reale (€40k).",
     useCases: [
       {
-        label: "Mix Musei Sottosoglia + 1 Enterprise",
-        description: "3 commesse da €24k (affidamento diretto sottosoglia) + 1 Enterprise €45k + canone SaaS Y2.",
-        patch: { tCommesseSottosoglia24m: 3, tPrezzoSottosogliaEur: 24000, tCommesseEnterprise24m: 1, tPrezzoEnterpriseEur: 45000 },
+        label: "Musei Sottosoglia + 1 Enterprise",
+        description: "3 commesse da €24k (affidamento diretto) + 1 Enterprise €45k con rinnovo SaaS Y2.",
+        patch: { tCommesseSottosoglia24m: 3, tPrezzoSottosogliaEur: 24000, tCommesseEnterprise24m: 1, tPrezzoEnterpriseEur: 45000, tRinnovoSaasY2Pct: 100 },
       },
       {
-        label: "Espansione Extra-Danza (Lirica & Design)",
-        description: "4 Sprint + 3 Enterprise in 24 mesi spinte da badge PLG 'Powered by'.",
-        patch: { tCommesseSottosoglia24m: 4, tCommesseEnterprise24m: 3, tCanoneSaasAnnuoEur: 4500, tCommesseY1AttiveSaas: 3 },
+        label: "Espansione Lirica & Design (PLG)",
+        description: "4 Sprint + 3 Enterprise in 24 mesi spinti dal badge 'Powered by'.",
+        patch: { tCommesseSottosoglia24m: 4, tCommesseEnterprise24m: 3, tCanoneSaasAnnuoEur: 4200, tRinnovoSaasY2Pct: 100 },
       },
     ],
     groups: [
       {
-        title: "5A · Commesse White-Label, Canone SaaS & Margini Operativi (4.7, 4.6-Platform)",
+        title: "5A · Commesse White-Label, Canone SaaS Y2 & Margini Operativi (4.7, 4.6-Platform)",
         subtitle: "Template editoriale-tecnologico chiavi in mano per altri settori creativi.",
         auditSummary:
-          "Assunzione chiave: includere Account e Project Management porta il costo marginale dal 38% teorico al ~45% reale, mantenendo comunque un ottimo margine operativo (55%) grazie al riuso della piattaforma L0.",
+          "Correzione v2: elimina il campo scollegato del numero piattaforme SaaS Y2 e la costante 15% COGS SaaS, derivandoli direttamente dai progetti Y1 e da input espliciti.",
         fields: [
           "tCommesseSottosoglia24m",
           "tPrezzoSottosogliaEur",
           "tCommesseEnterprise24m",
           "tPrezzoEnterpriseEur",
+          "tRinnovoSaasY2Pct",
           "tCanoneSaasAnnuoEur",
-          "tCommesseY1AttiveSaas",
+          "tCogsSaasPct",
           "tCostoMarginaleProduzionePct",
           "tQuotaLeadPlgBadgePct",
           "tCapexAlternativoClienteEur",
@@ -332,18 +370,15 @@ export function StakeholderWorkbench({
     <div className="space-y-8">
       {/* Banner Introduttivo & Scenari d'Esigenza */}
       <div className="rounded-[28px] border border-ink/10 bg-paper p-5 sm:p-7">
-        <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-          <div className="max-w-3xl">
-            <p className="eyebrow text-crimson">Simulatore verticale · {s.audience}</p>
-            <h2 className="mt-2 font-display text-3xl text-ink">{s.label} — Catene Input, Formule & Attribuzioni</h2>
-            <p className="mt-2.5 flex items-start gap-2 text-sm leading-relaxed text-ink/75">
-              <Lightbulb className="mt-0.5 h-4 w-4 shrink-0 text-crimson" />
-              <span>{cfg.headlineNote}</span>
-            </p>
-          </div>
+        <div className="max-w-4xl">
+          <p className="eyebrow text-crimson">Simulatore verticale v2 · {s.audience}</p>
+          <h2 className="mt-2 font-display text-3xl text-ink">{s.label} — Catene Input, Formule & Attribuzioni</h2>
+          <p className="mt-2.5 flex items-start gap-2 text-sm leading-relaxed text-ink/75">
+            <Lightbulb className="mt-0.5 h-4 w-4 shrink-0 text-crimson" />
+            <span>{cfg.headlineNote}</span>
+          </p>
         </div>
 
-        {/* Selettore rapido Esigenza Specifica */}
         <div className="mt-6 border-t border-ink/10 pt-5">
           <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/55">
             <Compass className="h-3.5 w-3.5 text-crimson" /> Simula un'esigenza specifica per questo Stakeholder (applica parametri rapidi modificabili):
@@ -367,14 +402,31 @@ export function StakeholderWorkbench({
       {/* Matrice 4 Quadranti */}
       <QuadrantResults stakeholderId={stakeholderId} output={out} baselineOutput={baseOut} />
 
-      {/* Metriche intermedie specifiche dello stakeholder (trasparenza extra) */}
+      {/* Metriche intermedie di controllo per massima trasparenza */}
       {stakeholderId === "fondazioni" && (
         <div className="grid gap-3 sm:grid-cols-4">
           {[
-            ["GMV Prenotato Turismo", `€${formatNumber(Math.round(raw.fTourismGmv))}`, "Lordo transazioni da contenuti Startup"],
-            ["Commissioni Startup 4.4", `€${formatNumber(Math.round(raw.fTourismCommStartup))}`, `Al ${inputs.tCommissioneStartupPct}% editabile`],
-            ["Netto Imprese Ricettive", `€${formatNumber(Math.round(raw.fTourismNetOperators))}`, "Resta agli operatori locali"],
-            ["Giornate Presenza Extra", formatNumber(Math.round(raw.fTourismExtraDays)), "Stima non monetizzabile per DMO"],
+            ["Licenze Enti Distribuite", formatNumber(Math.round(raw.fLicensesIssued)), `${raw.fContractsTot} enti contrattualizzati`],
+            ["Scuole di Danza Coinvolte", formatNumber(raw.fSchoolsTot), `${raw.fClassesTot} gruppi/corsi attivi`],
+            ["Commissioni Turismo 4.4", `€${formatNumber(Math.round(raw.fTourismCommStartup))}`, `${inputs.tCommissioneStartupPct}% su €${formatNumber(Math.round(raw.fTourismGmv))} GMV`],
+            ["Giornate Presenza Extra", formatNumber(Math.round(raw.fTourismExtraDays)), `€${formatNumber(Math.round(raw.fTourismSpillover))} indotto territorio`],
+          ].map(([l, v, sub]) => (
+            <div key={l} className="rounded-2xl border border-ink/10 bg-white/75 p-4">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-ink/50">{l}</p>
+              <p className="mt-1 font-display text-2xl text-ink tabular-nums">{v}</p>
+              <p className="mt-0.5 text-xs text-ink/55">{sub}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {stakeholderId === "aziende" && (
+        <div className="grid gap-3 sm:grid-cols-4">
+          {[
+            ["Pool Cross-DB + DB Startup", formatNumber(Math.round(raw.aTotalNewReachForBrands)), `Cross ${formatNumber(Math.round(raw.aCrossPoolContacts))} + DB Startup ${formatNumber(Math.round(raw.aStartupDbContacts))}`],
+            ["Lead Reali Generati", formatNumber(Math.round(raw.aLeadsGeneratedFromAudience)), `Su ${formatNumber(Math.round(raw.aNewBrandReadersFromDbAndOpera))} lettori esposti (CPL ${formatNumber(Math.round(raw.aBrandEffectiveCpl))}€)`],
+            ["Valore Nuovi Clienti (CLV)", `€${formatNumber(Math.round(raw.aClvValueNewCustomers))}`, `B2C €${inputs.aClvB2cEur} · B2B €${inputs.aClvB2bTechEur}`],
+            ["Valore Loyalty/Crisis CRM", `€${formatNumber(Math.round(raw.aRetentionClvValue))}`, `Su ${formatNumber(Math.round(raw.aCrmProprioTot))} contatti CRM proprio`],
           ].map(([l, v, sub]) => (
             <div key={l} className="rounded-2xl border border-ink/10 bg-white/75 p-4">
               <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-ink/50">{l}</p>
@@ -390,8 +442,25 @@ export function StakeholderWorkbench({
           {[
             ["Reach Incrementale Startup", formatNumber(Math.round(raw.iReachStartupDedup)), "Contatti diversi dal DB Ente (dedup.)"],
             ["Valore Media Startup (CPM)", `€${formatNumber(Math.round(raw.iCpmMediaValue))}`, `Calcolato a €${inputs.cpmCulturaleEur} CPM`],
-            ["Click Evento Importante", formatNumber(Math.round(raw.iImportantClicks)), "Popup Loyalty / Crisis / Invito"],
-            ["Pipeline B2B Originate", `€${formatNumber(Math.round(raw.iPipelineValueEstimated))}`, `Con +${inputs.iMoltiplicatoreAutorevolezzaPct}% Halo Effect`],
+            ["Traffico DB → Turismo / Contest", `${formatNumber(Math.round(raw.iDbTrafficToTourism))} / ${formatNumber(Math.round(raw.iDbTrafficToContest))}`, "Nessun doppio conteggio licenze"],
+            ["Pipeline B2B + Halo Effect", `€${formatNumber(Math.round(raw.iPipelineValueEstimated))}`, `Con +${inputs.iMoltiplicatoreAutorevolezzaPct}% autorevolezza`],
+          ].map(([l, v, sub]) => (
+            <div key={l} className="rounded-2xl border border-ink/10 bg-white/75 p-4">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-ink/50">{l}</p>
+              <p className="mt-1 font-display text-2xl text-ink tabular-nums">{v}</p>
+              <p className="mt-0.5 text-xs text-ink/55">{sub}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {stakeholderId === "community" && (
+        <div className="grid gap-3 sm:grid-cols-4">
+          {[
+            ["Studenti in Gara & K_contest", `${formatNumber(raw.cStudentsTot)} · ${raw.cContestK.toFixed(2)}x`, `${raw.cContestParticipants} realtà (${inputs.cCompagnieContest} comp. + ${inputs.cScuoleContest} scuole)`],
+            ["Spettatori/Votanti Trailer", formatNumber(Math.round(raw.cContestVoters)), "Audience reale generata dai contest"],
+            ["Ricavi Diretti Contest Startup", `€${formatNumber(Math.round(raw.cContestRegistrationRev + raw.cContestLicensesRev))}`, `Iscr. €${formatNumber(Math.round(raw.cContestRegistrationRev))} + Lic. €${formatNumber(Math.round(raw.cContestLicensesRev))}`],
+            ["Fondo Netto 'Vota Donando'", `€${formatNumber(Math.round(raw.cDonationsNetPool))}`, `${inputs.cQuotaDonazioniCommunityPct}% Comm. · ${inputs.cQuotaDonazioniFondazioniPct}% Enti · ${inputs.cFeeGestioneStartupDonazioniPct}% Fee`],
           ].map(([l, v, sub]) => (
             <div key={l} className="rounded-2xl border border-ink/10 bg-white/75 p-4">
               <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-ink/50">{l}</p>
